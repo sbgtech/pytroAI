@@ -1,0 +1,15 @@
+[Unit]
+Description=Gunicorn instance for pytro AI website
+After=network.target
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/var/www/html/pytroAI
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/var/www/html/pytroAI/venv/bin"
+ExecStart=/var/www/html/pytroAI/venv/bin/gunicorn -k eventlet -w 1 -b 0.0.0.0:9000 wsgi:app
+Restart=always
+StandardOutput=journal
+StandardError=journal
+PermissionsStartOnly=true
+[Install]
+WantedBy=multi-user.target

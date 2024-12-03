@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <style>
+      /* Style for the loading spinner */
+      #loading {
+        display: none;
+        text-align: center;
+        margin-top: 20px;
+      }
+      #loading img {
+        width: 50px;
+      }
+      #result {
+        display: none;
+      }
+
+      /* Ensure the progress list stays visible */
+      #progress-list {
+        display: block;
+        list-style-type: none;
+        padding: 0;
+      }
+
+      #progress-list li {
+        font-size: 14px;
+      }
+
+      .fa-check-circle {
+        color: #0b9b0b;
+      }
+      .mt-customize {
+        margin-top: 8em;
+      }
+    </style>
+    <style>
+      /* Make tabs full width */
+      .nav-tabs {
+        display: flex;
+        justify-content: space-around;
+        width: 100%; /* Ensure tabs stretch across the full width */
+      }
+      .nav-tabs .nav-item {
+        flex-grow: 1;
+        text-align: center; /* Center the tab text */
+        margin-inline: 1px;
+      }
+      .nav-tabs .nav-link {
+        background-color: transparent; /* Transparent background */
+        color: white;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .nav-tabs .nav-link:hover {
+        background-color: #0b5ed7;
+        /* border: none; */
+        border-color: #0b5ed7;
+      }
+      .nav-tabs .nav-link.active {
+        background-color: #034fc0;
+        color: white;
+        border: none;
+      }
+
+      /* Make tab content full width */
+      .tab-content {
+        width: 100%; /* Ensure content fills entire space */
+      }
+
+      /* Make tabs responsive */
+      @media (max-width: 767px) {
+        .nav-tabs .nav-item {
+          text-align: left; /* Align text to the left on small screens */
+        }
+      }
+    </style>
+    <title>Pytro AI</title>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <!---------------------------------------- Welcome message ---------------------------------------->
+      <div class="p-2 d-flex justify-content-between">
+        <h1 class="fw-bold">PYTRO AI</h1>
+        <img
+          src="/static/Pytronix_Logo.png"
+          alt="Pytronix Logo"
+          width="100px"
+          height="47px"
+        />
+      </div>
+      <!---------------------------------------- Tab navigation ---------------------------------------->
+      <ul class="nav nav-tabs w-100" id="mainTab" role="tablist">
+        <li class="nav-item bg-primary" role="presentation">
+          <a
+            class="nav-link active"
+            id="device-tab"
+            data-bs-toggle="tab"
+            href="#device"
+            role="tab"
+            aria-controls="device"
+            aria-selected="true"
+            >Device</a
+          >
+        </li>
+        <li class="nav-item bg-primary" role="presentation">
+          <a
+            class="nav-link"
+            id="settings-tab"
+            data-bs-toggle="tab"
+            href="#settings"
+            role="tab"
+            aria-controls="settings"
+            aria-selected="false"
+            >Settings</a
+          >
+        </li>
+        <li class="nav-item bg-primary" role="presentation">
+          <a
+            class="nav-link"
+            id="dfu-tab"
+            data-bs-toggle="tab"
+            href="#dfu"
+            role="tab"
+            aria-controls="dfu"
+            aria-selected="false"
+            >DFU</a
+          >
+        </li>
+        <li class="nav-item bg-primary" role="presentation">
+          <a
+            class="nav-link"
+            id="tcpftp-tab"
+            data-bs-toggle="tab"
+            href="#tcpftp"
+            role="tab"
+            aria-controls="tcpftp"
+            aria-selected="false"
+            >TCP FTP</a
+          >
+        </li>
+        <li class="nav-item bg-primary" role="presentation">
+          <a
+            class="nav-link"
+            id="build-tab"
+            data-bs-toggle="tab"
+            href="#build"
+            role="tab"
+            aria-controls="build"
+            aria-selected="false"
+            >Build</a
+          >
+        </li>
+      </ul>
+
+      <!---------------------------------------- Tab content ---------------------------------------->
+      <div class="tab-content w-100" id="myTabContent">
+        <!---------------------------------------- Device Tab ---------------------------------------->
+        <div
+          class="tab-pane fade show active"
+          id="device"
+          role="tabpanel"
+          aria-labelledby="device-tab"
+        >
+          <div
+            class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+          >
+            <button id="serialButton" class="btn btn-primary">
+              Connect to Serial Port
+            </button>
+            <p class="mt-3" id="statusMessage">
+              Click the button above to connect to the serial port.
+            </p>
+            <table
+              class="table table-hover table-striped"
+              id="fileTable"
+              style="display: none"
+            >
+              <thead>
+                <tr>
+                  <th>File Type</th>
+                  <th>File Name</th>
+                  <th>Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>.....</td>
+                  <td>.....</td>
+                  <td>.....</td>
+                </tr>
+                <tr>
+                  <td>.....</td>
+                  <td>.....</td>
+                  <td>.....</td>
+                </tr>
+                <tr>
+                  <td>.....</td>
+                  <td>.....</td>
+                  <td>.....</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!---------------------------------------- Settings Tab ---------------------------------------->
+        <div
+          class="tab-pane fade"
+          id="settings"
+          role="tabpanel"
+          aria-labelledby="settings-tab"
+        >
+          <!-- Sub-tabs inside the settings tab -->
+          <ul class="nav nav-tabs" id="settingsSubTab" role="tablist">
+            <li class="nav-item bg-primary" role="presentation">
+              <a
+                class="nav-link active"
+                id="common-settings-tab"
+                data-bs-toggle="tab"
+                href="#common-settings"
+                role="tab"
+                aria-controls="common-settings"
+                aria-selected="true"
+                >Common settings</a
+              >
+            </li>
+            <li class="nav-item bg-primary" role="presentation">
+              <a
+                class="nav-link"
+                id="arrival-statistics-tab"
+                data-bs-toggle="tab"
+                href="#arrival-statistics"
+                role="tab"
+                aria-controls="arrival-statistics"
+                aria-selected="false"
+                >Arrival statistics</a
+              >
+            </li>
+          </ul>
+
+          <!-- Content for sub-tabs inside the settings tab -->
+          <div class="tab-content mt-2">
+            <div
+              class="tab-pane fade show active"
+              id="common-settings"
+              role="tabpanel"
+              aria-labelledby="common-settings-tab"
+            >
+              <!-- Content for Common settings -->
+              <h5 class="bg-dark text-light p-2">Controller configuration</h5>
+              <div class="container">
+                <!-- production method, missrun and well depth -->
+                <div class="row mb-2">
+                  <div class="col-md-3">
+                    <label for="R40112" class="form-label"
+                      >Production Method</label
+                    >
+                    <select id="R40112" class="form-select">
+                      <option selected value="0">Timer Mode</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40110" class="form-label">Missrun Max</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40110"
+                      value="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40111" class="form-label"
+                      >Detect False Arrivals</label
+                    >
+                    <select id="R40111" class="form-select">
+                      <option selected value="0">Disable</option>
+                      <option value="1">Enable</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40126" class="form-label">Well Depth</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40126"
+                      value="45"
+                    />
+                  </div>
+                </div>
+                <!-- Afterflow -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="AfterflowH" class="form-label"
+                      >Afterflow Time (hrs)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="AfterflowH"
+                      value="12"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="AfterflowM" class="form-label"
+                      >Afterflow Time (min)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="AfterflowM"
+                      value="58"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="AfterflowS" class="form-label"
+                      >Afterflow Time (sec)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="AfterflowS"
+                      value="05"
+                    />
+                  </div>
+                </div>
+                <!-- Open Time -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="OpenH" class="form-label"
+                      >Open Time (hrs)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="OpenH"
+                      value="08"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="OpenM" class="form-label"
+                      >Open Time (min)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="OpenM"
+                      value="36"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="OpenS" class="form-label"
+                      >Open Time (sec)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="OpenS"
+                      value="00"
+                    />
+                  </div>
+                </div>
+                <!-- Shutin Time -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="ShutinH" class="form-label"
+                      >Shutin Time (hrs)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="ShutinH"
+                      value="29"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="ShutinM" class="form-label"
+                      >Shutin Time (min)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="ShutinM"
+                      value="44"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="ShutinS" class="form-label"
+                      >Shutin Time (sec)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="ShutinS"
+                      value="17"
+                    />
+                  </div>
+                </div>
+                <!-- Mandatory Time -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="MandShutinH" class="form-label"
+                      >Mandatory Time (hrs)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="MandShutinH"
+                      value="24"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="MandShutinM" class="form-label"
+                      >Mandatory Time (min)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="MandShutinM"
+                      value="31"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="MandShutinS" class="form-label"
+                      >Mandatory Time (sec)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="MandShutinS"
+                      value="01"
+                    />
+                  </div>
+                </div>
+                <!-- HiLo -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="R40123" class="form-label"
+                      >HiLo Mode Enable</label
+                    >
+                    <select id="R40123" class="form-select">
+                      <option selected value="0">Disable</option>
+                      <option value="1">Enable</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40124" class="form-label"
+                      >HiLo High Threshold</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40124"
+                      value="10"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40125" class="form-label"
+                      >HiLo Low Threshold</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40125"
+                      value="9"
+                    />
+                  </div>
+                </div>
+                <!-- LP sensor -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="R40101" class="form-label"
+                      >LP Sensor Type</label
+                    >
+                    <select id="R40101" class="form-select">
+                      <option selected value="0">Voltage</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40102" class="form-label"
+                      >LP Sensor Max(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40102"
+                      value="100"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40103" class="form-label"
+                      >LP Sensor Min(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40103"
+                      value="75"
+                    />
+                  </div>
+                </div>
+                <!-- CP sensor -->
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <label for="R40104" class="form-label"
+                      >CP Sensor Type</label
+                    >
+                    <select id="R40104" class="form-select">
+                      <option selected value="0">Voltage</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40105" class="form-label"
+                      >CP Sensor Max(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40105"
+                      value="2000"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40106" class="form-label"
+                      >CP Sensor Min(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40106"
+                      value="1800"
+                    />
+                  </div>
+                </div>
+                <!-- TP sensor -->
+                <div class="row mb-4">
+                  <div class="col-md-4">
+                    <label for="R40107" class="form-label"
+                      >TP Sensor Type</label
+                    >
+                    <select id="R40107" class="form-select">
+                      <option selected value="0">Voltage</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40108" class="form-label"
+                      >TP Sensor Max(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40108"
+                      value="400"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="R40109" class="form-label"
+                      >TP Sensor Min(PSI)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40109"
+                      value="350"
+                    />
+                  </div>
+                </div>
+                <!-- LP, CP and TP voltage -->
+                <div class="row mb-4">
+                  <div class="col-md-2">
+                    <label for="R40117" class="form-label"
+                      >LP Voltage Max (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40117"
+                      value="40"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <label for="R40118" class="form-label"
+                      >LP Voltage Min (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40118"
+                      value="30"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <label for="R40119" class="form-label"
+                      >CP Voltage Max (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40119"
+                      value="50"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <label for="R40120" class="form-label"
+                      >CP Voltage Min (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40120"
+                      value="10"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <label for="R40121" class="form-label"
+                      >TP Voltage Max (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40121"
+                      value="400"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <label for="R40122" class="form-label"
+                      >TP Voltage Min (V)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40122"
+                      value="400"
+                    />
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end mb-4">
+                  <button class="btn btn-primary" style="width: 10%">
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div
+              class="tab-pane fade"
+              id="arrival-statistics"
+              role="tabpanel"
+              aria-labelledby="arrival-statistics-tab"
+            >
+              <!-- Content for Arrival statistics -->
+              <h5 class="bg-dark text-light p-2">Arrival statistics</h5>
+              <div class="container">
+                <!-- Arrivals -->
+                <div class="row mb-2">
+                  <div class="col-md-3">
+                    <label for="R40036" class="form-label"
+                      >Arrivals Today</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40036"
+                      value="45"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40037" class="form-label">Arrivals Week</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40037"
+                      value="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40038" class="form-label"
+                      >Arrivals Total</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40038"
+                      value="45"
+                    />
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button class="form-control btn btn-primary">Reset</button>
+                  </div>
+                </div>
+                <!-- Missrun  -->
+                <div class="row mb-2">
+                  <div class="col-md-3">
+                    <label for="R40039" class="form-label">Missrun Today</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40039"
+                      value="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40040" class="form-label">Missrun Week</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40040"
+                      value="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40041" class="form-label">Missrun Total</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40041"
+                      value="45"
+                    />
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button class="form-control btn btn-primary">Reset</button>
+                  </div>
+                </div>
+                <!-- OnTime  -->
+                <div class="row mb-2">
+                  <div class="col-md-3">
+                    <label for="R40042" class="form-label">OnTime Today</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40042"
+                      value="99"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40043" class="form-label">OnTime Week</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40043"
+                      value="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="R40044" class="form-label">OnTime Total</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="R40044"
+                      value="99"
+                    />
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button class="form-control btn btn-primary">Reset</button>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end mt-5">
+                  <button class="btn btn-primary" style="width: 23.5%">
+                    Reset all
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!---------------------------------------- DFU Tab ---------------------------------------->
+        <div
+          class="tab-pane fade"
+          id="dfu"
+          role="tabpanel"
+          aria-labelledby="dfu-tab"
+        >
+          <h4>DFU Tab Content</h4>
+          <p>This is the content for the DFU tab.</p>
+        </div>
+
+        <!---------------------------------------- TCP FTP Tab ---------------------------------------->
+        <div
+          class="tab-pane fade"
+          id="tcpftp"
+          role="tabpanel"
+          aria-labelledby="tcpftp-tab"
+        >
+          <h4>TCP FTP Tab Content</h4>
+          <p>This is the content for the TCP FTP tab.</p>
+        </div>
+
+        <!---------------------------------------- Build Tab ---------------------------------------->
+        <div
+          class="tab-pane fade"
+          id="build"
+          role="tabpanel"
+          aria-labelledby="build-tab"
+        >
+          <div
+            class="container mt-customize d-flex justify-content-center align-items-center"
+          >
+            <div class="row w-100">
+              <div class="col-md-6 mx-auto">
+                <div class="card p-4 border border-primary">
+                  <h3 class="card-title text-center">
+                    Cloud Micropython Build v2
+                  </h3>
+                  <form
+                    id="uploadForm"
+                    action="{{ url_for('upload_file') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                  >
+                    <div class="mb-3">
+                      <label for="board_name" class="form-label"
+                        >Board Name</label
+                      >
+                      <select
+                        class="form-select"
+                        aria-label="Default select example"
+                        name="board_name"
+                        required
+                      >
+                        <option selected disabled value="">
+                          Choose device
+                        </option>
+                        <option value="WELLTIMER">WELLTIMER</option>
+                        <option value="PYDAQ_S200WE">PYDAQ S200WE</option>
+                        <option value="PYDAQ_B200">PYDAQ B200</option>
+                        <option value="PYTITAN">PYTITAN</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="file" class="form-label">Choose a file</label>
+                      <input
+                        class="form-control"
+                        type="file"
+                        name="file"
+                        id="file"
+                        required
+                        accept=".zip"
+                        onchange="validateFile()"
+                      />
+                    </div>
+                    <div class="d-flex justify-content-center">
+                      <button
+                        type="submit"
+                        class="btn btn-primary w-25 fw-bold"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </form>
+
+                  <div id="loading">
+                    <img src="https://i.gifer.com/7plX.gif" alt="Loading..." />
+                    <div id="loading-message">Processing, please wait...</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6" id="result">
+                <div
+                  id="error-container"
+                  class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+                  style="display: none"
+                >
+                  <p
+                    id="error-message"
+                    class="text-center text-light p-0 m-0"
+                  ></p>
+                </div>
+
+                <div id="progress-container">
+                  <ul id="progress-list"></ul>
+                </div>
+
+                <div id="result-container" style="display: none">
+                  <a
+                    id="download-link"
+                    href=""
+                    class="btn btn-success"
+                    target="_blank"
+                    >Download the build files (.zip)</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- for the device tab -->
+    <script>
+      // Function for handling serial communication
+      async function SerialCom2() {
+        try {
+          // Request the serial port
+          const port = await navigator.serial.requestPort();
+          // Open the serial port with the desired settings
+          await port.open({ baudRate: 9600 });
+          console.log("Serial port opened:", port.getInfo());
+          document.getElementById("serialButton").style.display = "none";
+          document.getElementById("statusMessage").textContent =
+            "Successfully connected to the serial port!";
+          document.getElementById("fileTable").style.display = "block";
+        } catch (err) {
+          console.error("Failed to communicate with the serial port:", err);
+          document.getElementById("statusMessage").textContent =
+            "Failed to connect. Please try again.";
+        }
+      }
+
+      // Add event listener to the button to start serial communication
+      document
+        .getElementById("serialButton")
+        .addEventListener("click", function () {
+          SerialCom2(); // This will attempt to open the serial port when clicked
+          document.getElementById("statusMessage").textContent =
+            "Attempting to connect...";
+        });
+    </script>
+
+    <!-- for the dfu tab -->
+    <script>
+      // Wait for the DOM to fully load
+      document.addEventListener("DOMContentLoaded", function () {
+        // Select the DFU tab element
+        const dfuTab = document.getElementById("dfu-tab");
+        // Add an event listener for when the DFU tab is clicked
+        dfuTab.addEventListener("shown.bs.tab", function () {
+          // Call your custom function when the DFU tab is clicked
+          setTimeout(myCustomFunction, 3000);
+        });
+      });
+      // Define the custom function to be called on tab click
+      function myCustomFunction() {
+        console.log("DFU Tab clicked and 3 seconds have passed!");
+        // Use confirm() to show a dialog and capture the user's response
+        const userConfirmed = confirm(
+          "DFU Tab content is now visible. Do you want to proceed?"
+        );
+        // Check if the user clicked "OK" (true) or "Cancel" (false)
+        if (userConfirmed) {
+          // Run another function if user clicks "OK"
+          anotherFunction();
+        } else {
+          console.log("User clicked Cancel.");
+        }
+      }
+      // Function to run if user clicks "OK" in the confirm dialog
+      function anotherFunction() {
+        console.log("User clicked OK! Running another function...");
+        // Your additional logic here
+        alert("You clicked OK, and now this function runs!");
+      }
+    </script>
+
+    <script>
+      // Initialize the SocketIO client
+      const socket = io("https://build.s2c.io", {
+        transports: ["websocket"],
+        path: "/socket.io/", // Ensure the path matches Nginx configuration
+        reconnection: true,
+        timeout: 20000, // Adjust timeout if needed
+      });
+
+      // Array to store references to list items
+      const progressItems = [];
+
+      // Listen for progress updates from the server
+      socket.on("progress", function (data) {
+        const progressList = document.getElementById("progress-list");
+
+        const result = document.getElementById("result");
+        result.style.display = "block";
+
+        // Create a new <li> element for the progress update
+        const listItem = document.createElement("li");
+        //listItem.textContent = data.message;
+        // Use insertAdjacentHTML to parse the HTML properly
+        listItem.insertAdjacentHTML("beforeend", data.message); // Insert as HTML, not plain text
+
+        // Append the <li> element to the list
+        progressList.appendChild(listItem);
+
+        // Save the reference to the new <li> element
+        progressItems.push(listItem);
+
+        // Scroll to the bottom of the progress list
+        progressList.scrollTop = progressList.scrollHeight;
+
+        // Check if the message is 'in progress'
+        if (data.message.includes("...")) {
+          // If in progress, let's keep it visible
+          listItem.style.display = "block";
+        }
+
+        // Check if the message is 'successfully' processed
+        if (data.message.includes("successfully")) {
+          // After showing "successfully", hide the "in progress" message
+          progressItems.forEach((item) => {
+            if (item.textContent.includes("...")) {
+              item.style.display = "none"; // Hide the in-progress item
+            }
+          });
+
+          // Show the "successfully" message
+          listItem.style.display = "block"; // Ensure the success message is visible
+        }
+      });
+
+      // Show the loading spinner when the form is submitted
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          // Reset the progress and error containers before new upload
+          resetUI();
+
+          // Show the loading spinner
+          document.getElementById("loading").style.display = "block";
+
+          // Show the progress container to display the progress messages
+          document.getElementById("progress-container").style.display = "block";
+
+          // Create a FormData object from the form
+          const formData = new FormData(this);
+
+          // Send the form data via AJAX
+          fetch('{{ url_for("upload_file") }}', {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") {
+                // Display the success message and download link
+                document.getElementById("download-link").href = data.zip_file;
+                document.getElementById("result-container").style.display =
+                  "block";
+                document.getElementById("loading").style.display = "none";
+              } else {
+                // Display error message if any
+                document.getElementById("error-message").textContent =
+                  data.message;
+                document.getElementById("error-container").style.display =
+                  "block";
+                // Hide the loading spinner
+                document.getElementById("loading").style.display = "none";
+              }
+            })
+            .catch((error) => {
+              console.error("Error uploading file:", error);
+            });
+        });
+
+      // Function to reset the UI (clear progress and error containers)
+      function resetUI() {
+        // Clear the progress list
+        const progressList = document.getElementById("progress-list");
+        progressList.innerHTML = ""; // Remove all existing list items
+
+        // Hide the result container (we don't want to show it initially)
+        document.getElementById("result-container").style.display = "none";
+
+        // Hide the error container and clear its message
+        document.getElementById("error-container").style.display = "none";
+        document.getElementById("error-message").textContent = "";
+
+        // Hide the loading spinner at first (until upload starts)
+        document.getElementById("loading").style.display = "none";
+
+        // Show the progress container again when a new upload starts
+        document.getElementById("progress-container").style.display = "block";
+      }
+
+      function validateFile() {
+        const fileInput = document.getElementById("file");
+        const filePath = fileInput.value;
+
+        // Only validate if the user has selected a file
+        if (filePath) {
+          const allowedExtensions = /(\.zip)$/i;
+
+          if (!allowedExtensions.test(filePath)) {
+            alert("Please upload a file with a .zip extension.");
+            fileInput.value = ""; // Clear the input
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,283 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- Build Tab ---------------------------------------->
+<script>
+  window.onload = function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get("username");
+    // console.log(username);
+    // Get the Send button element
+    const sendButton = document.querySelector('button[type="submit"]');
+
+    // Check if the username exists
+    if (username) {
+      // Enable the button if username exists
+      sendButton.disabled = false;
+
+      // Set the hidden input value for the username field
+      // document.getElementById("username").value = username;
+    } else {
+      // Disable the button and show an alert if username is missing
+      sendButton.disabled = true;
+      alert("Username is missing in the URL.");
+    }
+  };
+</script>
+<div>
+  <div
+    class="container mt-customize d-flex justify-content-center align-items-center"
+  >
+    <div class="row w-100">
+      <div class="col-md-6 mx-auto">
+        <div class="card p-4 border border-primary">
+          <h3 class="card-title text-center">Cloud Micropython Build</h3>
+          <form
+            id="uploadForm"
+            action="{{ url_for('upload_file') }}"
+            method="POST"
+            enctype="multipart/form-data"
+          >
+            <input
+              type="hidden"
+              name="username"
+              id="username"
+              value="{{username}}"
+            />
+            <div class="mb-3">
+              <label for="board_name" class="form-label">Board Name</label>
+              <select
+                class="form-select"
+                aria-label="Default select example"
+                name="board_name"
+                id="board_name"
+                required
+              >
+                <option selected disabled value="">Choose device</option>
+                <option value="RECON_V2">RECON CONTROLLER V2</option>
+                <option value="PYDAQ_S200WE">PYDAQ S200WE</option>
+                <option value="PYDAQ_B200">PYDAQ B200</option>
+                <option value="PYTITAN">PYTITAN</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="firmware_version" class="form-label"
+                >Firmware version</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="firmware_version"
+                name="firmware_version"
+                placeholder="E.g. 1.0.1"
+                maxlength="16"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="build_file" class="form-label">Choose a file</label>
+              <input
+                class="form-control"
+                type="file"
+                name="build_file"
+                id="build_file"
+                required
+                accept=".zip"
+                onchange="validateBuildFile()"
+              />
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                type="submit"
+                class="btn btn-primary w-25 fw-bold"
+                disabled
+              >
+                Send
+              </button>
+            </div>
+          </form>
+
+          <div id="build-loading">
+            <img src="https://i.gifer.com/7plX.gif" alt="Loading..." />
+            <div id="loading-message">Processing, please wait...</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6" id="build-result">
+        <div
+          id="build-error-container"
+          class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+          style="display: none"
+        >
+          <p
+            id="build-error-message"
+            class="text-center text-light p-0 m-0"
+          ></p>
+        </div>
+
+        <div id="build-progress-container">
+          <ul id="build-progress-list"></ul>
+        </div>
+
+        <div id="build-result-container" style="display: none">
+          <a id="download-link" href="" class="btn btn-success" target="_blank"
+            >Download the build files (.zip)</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Initialize the SocketIO client
+  const socket = io("https://build.s2c.io", {
+    transports: ["websocket"],
+    path: "/socket.io/", // Ensure the path matches Nginx configuration
+    reconnection: true,
+    reconnectionAttempts: 5, // Number of reconnection attempts
+    reconnectionDelay: 1000, // Delay between attempts (in ms)
+    timeout: 20000, // Adjust timeout if needed
+  });
+
+  // Array to store references to list items
+  const progressItems = [];
+
+  // Store the session ID (sid) on the client side
+  let userRoom = null;
+
+  // When the user connects, store their SID (session ID)
+  socket.on("connect", function () {
+    userRoom = socket.id; // This stores the session ID
+  });
+
+  // Listen for progress updates from the server
+  socket.on("progress", function (data) {
+    const progressList = document.getElementById("build-progress-list");
+
+    const result = document.getElementById("build-result");
+    result.style.display = "block";
+
+    // Create a new <li> element for the progress update
+    const listItem = document.createElement("li");
+    //listItem.textContent = data.message;
+    // Use insertAdjacentHTML to parse the HTML properly
+    listItem.insertAdjacentHTML("beforeend", data.message); // Insert as HTML, not plain text
+
+    // Append the <li> element to the list
+    progressList.appendChild(listItem);
+
+    // Save the reference to the new <li> element
+    progressItems.push(listItem);
+
+    // Scroll to the bottom of the progress list
+    progressList.scrollTop = progressList.scrollHeight;
+
+    // Check if the message is 'in progress'
+    if (data.message.includes("...")) {
+      // If in progress, let's keep it visible
+      listItem.style.display = "block";
+    }
+
+    // Check if the message is 'successfully' processed
+    if (data.message.includes("successfully")) {
+      // After showing "successfully", hide the "in progress" message
+      progressItems.forEach((item) => {
+        if (item.textContent.includes("...")) {
+          item.style.display = "none"; // Hide the in-progress item
+        }
+      });
+
+      // Show the "successfully" message
+      listItem.style.display = "block"; // Ensure the success message is visible
+    }
+  });
+
+  // Show the loading spinner when the form is submitted
+  document
+    .getElementById("uploadForm")
+    .addEventListener("submit", function (event) {
+      event.preventDefault(); // Prevent the default form submission
+
+      // Reset the progress and error containers before new upload
+      resetUI();
+
+      // Show the loading spinner
+      document.getElementById("build-loading").style.display = "block";
+
+      // Show the progress container to display the progress messages
+      document.getElementById("build-progress-container").style.display =
+        "block";
+
+      // Create a FormData object from the form
+      const formData = new FormData(this);
+
+      // Add userRoom (SID) to the form data
+      formData.append("user_room", userRoom);
+      // Send the form data via AJAX
+      fetch('{{ url_for("upload_file") }}', {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("in the ajax building");
+          if (data.status === "success") {
+            console.log("Response data:", data);
+            console.log("Status:", data.status);
+            // Display the success message and download link
+            document.getElementById("download-link").href = data.zip_file;
+            document.getElementById("build-result-container").style.display =
+              "block";
+            document.getElementById("build-loading").style.display = "none";
+          } else {
+            // Display error message if any
+            document.getElementById("build-error-message").textContent =
+              data.message;
+            document.getElementById("build-error-container").style.display =
+              "block";
+            // Hide the loading spinner
+            document.getElementById("loading").style.display = "none";
+          }
+        })
+        .catch((error) => {
+          console.log("Error uploading file:", error);
+          document.getElementById("build-loading").style.display = "none";
+        });
+    });
+
+  // Function to reset the UI (clear progress and error containers)
+  function resetUI() {
+    // Clear the progress list
+    const progressList = document.getElementById("build-progress-list");
+    progressList.innerHTML = ""; // Remove all existing list items
+
+    // Hide the result container (we don't want to show it initially)
+    document.getElementById("build-result-container").style.display = "none";
+
+    // Hide the error container and clear its message
+    document.getElementById("build-error-container").style.display = "none";
+    document.getElementById("build-error-message").textContent = "";
+
+    // Hide the loading spinner at first (until upload starts)
+    document.getElementById("build-loading").style.display = "none";
+
+    // Show the progress container again when a new upload starts
+    document.getElementById("build-progress-container").style.display = "block";
+  }
+
+  function validateBuildFile() {
+    const fileInput = document.getElementById("build_file");
+    const filePath = fileInput.value;
+
+    // Only validate if the user has selected a file
+    if (filePath) {
+      const allowedExtensions = /(\.zip)$/i;
+
+      if (!allowedExtensions.test(filePath)) {
+        alert("Please upload a file with a .zip extension.");
+        fileInput.value = ""; // Clear the input
+      }
+    }
+  }
+</script>
+
+{% endblock %}

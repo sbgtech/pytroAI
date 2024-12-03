@@ -1,0 +1,70 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- TCP FTP Tab ---------------------------------------->
+<div
+  class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+>
+  <div class="row w-100">
+    <div class="col-md-6 mx-auto">
+      <div class="card p-4 border border-primary">
+        <form
+          id="uploadForm"
+          action="{{ url_for('upload_file') }}"
+          method="POST"
+          enctype="multipart/form-data"
+        >
+          <label for="tcpftp_file" class="form-label fs-4">Upload files</label>
+          <input
+            class="form-control"
+            type="file"
+            name="tcpftp_file"
+            id="tcpftp_file"
+            required
+            accept=".zip"
+            onchange="validateTCPFTPFile()"
+          />
+        </form>
+      </div>
+    </div>
+    <div class="col-md-6" id="tcpftp-result">
+      <div
+        id="tcpftp-error-container"
+        class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+        style="display: none"
+      >
+        <p id="tcpftp-error-message" class="text-center text-light p-0 m-0"></p>
+      </div>
+
+      <div id="tcpftp-progress-container">
+        <ul id="tcpftp-progress-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function validateTCPFTPFile() {
+    const fileInput = document.getElementById("tcpftp_file");
+    const filePath = fileInput.value;
+    const progressItems = [];
+
+    // Only validate if the user has selected a file
+    if (filePath) {
+      const allowedExtensions = /(\.zip)$/i;
+
+      if (!allowedExtensions.test(filePath)) {
+        alert("Please upload a file with a .zip extension.");
+        fileInput.value = ""; // Clear the input
+      } else {
+        const result = document.getElementById("tcpftp-result");
+        result.style.display = "block";
+        const progressList = document.getElementById("tcpftp-progress-list");
+        const listItem = document.createElement("li");
+        listItem.insertAdjacentHTML("beforeend", "successfully added");
+        progressList.appendChild(listItem);
+        progressItems.push(listItem);
+      }
+    }
+  }
+</script>
+
+{% endblock %}

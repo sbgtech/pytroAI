@@ -1,0 +1,77 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- Device Tab ---------------------------------------->
+<div>
+  <div
+    class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+  >
+    <button id="serialButton" class="btn btn-primary">
+      Connect to Serial Port
+    </button>
+    <p class="mt-3" id="statusMessage">
+      Click the button above to connect to the serial port.
+    </p>
+    <table
+      class="table table-hover table-striped"
+      id="fileTable"
+      style="display: none"
+    >
+      <thead>
+        <tr>
+          <th>File Type</th>
+          <th>File Name</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>.....</td>
+          <td>.....</td>
+          <td>.....</td>
+        </tr>
+        <tr>
+          <td>.....</td>
+          <td>.....</td>
+          <td>.....</td>
+        </tr>
+        <tr>
+          <td>.....</td>
+          <td>.....</td>
+          <td>.....</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- for the device tab -->
+<script>
+  // Function for handling serial communication
+  async function SerialCom2() {
+    try {
+      // Request the serial port
+      const port = await navigator.serial.requestPort();
+      // Open the serial port with the desired settings
+      await port.open({ baudRate: 9600 });
+      console.log("Serial port opened:", port.getInfo());
+      document.getElementById("serialButton").style.display = "none";
+      document.getElementById("statusMessage").textContent =
+        "Successfully connected to the serial port!";
+      document.getElementById("fileTable").style.display = "block";
+    } catch (err) {
+      console.error("Failed to communicate with the serial port:", err);
+      document.getElementById("statusMessage").textContent =
+        "Failed to connect. Please try again.";
+    }
+  }
+
+  // Add event listener to the button to start serial communication
+  document
+    .getElementById("serialButton")
+    .addEventListener("click", function () {
+      SerialCom2(); // This will attempt to open the serial port when clicked
+      document.getElementById("statusMessage").textContent =
+        "Attempting to connect...";
+    });
+</script>
+
+{% endblock %}

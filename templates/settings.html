@@ -1,0 +1,342 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- Settings Tab ---------------------------------------->
+<div>
+  <!-- Sub-tabs inside the settings tab -->
+  <ul class="nav nav-tabs" id="settingsSubTab" role="tablist">
+    <li class="nav-item bg-primary" role="presentation">
+      <a
+        class="nav-link active"
+        id="common-settings-tab"
+        data-bs-toggle="tab"
+        href="#common-settings"
+        role="tab"
+        aria-controls="common-settings"
+        aria-selected="true"
+        >Common settings</a
+      >
+    </li>
+    <li class="nav-item bg-primary" role="presentation">
+      <a
+        class="nav-link"
+        id="arrival-statistics-tab"
+        data-bs-toggle="tab"
+        href="#arrival-statistics"
+        role="tab"
+        aria-controls="arrival-statistics"
+        aria-selected="false"
+        >Arrival statistics</a
+      >
+    </li>
+  </ul>
+
+  <!-- Content for sub-tabs inside the settings tab -->
+  <div class="tab-content mt-2">
+    <div
+      class="tab-pane fade show active"
+      id="common-settings"
+      role="tabpanel"
+      aria-labelledby="common-settings-tab"
+    >
+      <!-- Content for Common settings -->
+      <h5 class="bg-dark text-light p-2">Controller configuration</h5>
+      <div class="container">
+        <!-- production method, missrun and well depth -->
+        <div class="row mb-2">
+          <div class="col-md-3">
+            <label for="R40112" class="form-label">Production Method</label>
+            <select id="R40112" class="form-select">
+              <option selected value="0">Timer Mode</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="R40110" class="form-label">Missrun Max</label>
+            <input type="text" class="form-control" id="R40110" value="0" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40111" class="form-label">Detect False Arrivals</label>
+            <select id="R40111" class="form-select">
+              <option selected value="0">Disable</option>
+              <option value="1">Enable</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="R40126" class="form-label">Well Depth</label>
+            <input type="text" class="form-control" id="R40126" value="45" />
+          </div>
+        </div>
+        <!-- Afterflow -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="AfterflowH" class="form-label"
+              >Afterflow Time (hrs)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="AfterflowH"
+              value="12"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="AfterflowM" class="form-label"
+              >Afterflow Time (min)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="AfterflowM"
+              value="58"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="AfterflowS" class="form-label"
+              >Afterflow Time (sec)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="AfterflowS"
+              value="05"
+            />
+          </div>
+        </div>
+        <!-- Open Time -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="OpenH" class="form-label">Open Time (hrs)</label>
+            <input type="text" class="form-control" id="OpenH" value="08" />
+          </div>
+          <div class="col-md-4">
+            <label for="OpenM" class="form-label">Open Time (min)</label>
+            <input type="text" class="form-control" id="OpenM" value="36" />
+          </div>
+          <div class="col-md-4">
+            <label for="OpenS" class="form-label">Open Time (sec)</label>
+            <input type="text" class="form-control" id="OpenS" value="00" />
+          </div>
+        </div>
+        <!-- Shutin Time -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="ShutinH" class="form-label">Shutin Time (hrs)</label>
+            <input type="text" class="form-control" id="ShutinH" value="29" />
+          </div>
+          <div class="col-md-4">
+            <label for="ShutinM" class="form-label">Shutin Time (min)</label>
+            <input type="text" class="form-control" id="ShutinM" value="44" />
+          </div>
+          <div class="col-md-4">
+            <label for="ShutinS" class="form-label">Shutin Time (sec)</label>
+            <input type="text" class="form-control" id="ShutinS" value="17" />
+          </div>
+        </div>
+        <!-- Mandatory Time -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="MandShutinH" class="form-label"
+              >Mandatory Time (hrs)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="MandShutinH"
+              value="24"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="MandShutinM" class="form-label"
+              >Mandatory Time (min)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="MandShutinM"
+              value="31"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="MandShutinS" class="form-label"
+              >Mandatory Time (sec)</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="MandShutinS"
+              value="01"
+            />
+          </div>
+        </div>
+        <!-- HiLo -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="R40123" class="form-label">HiLo Mode Enable</label>
+            <select id="R40123" class="form-select">
+              <option selected value="0">Disable</option>
+              <option value="1">Enable</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="R40124" class="form-label">HiLo High Threshold</label>
+            <input type="text" class="form-control" id="R40124" value="10" />
+          </div>
+          <div class="col-md-4">
+            <label for="R40125" class="form-label">HiLo Low Threshold</label>
+            <input type="text" class="form-control" id="R40125" value="9" />
+          </div>
+        </div>
+        <!-- LP sensor -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="R40101" class="form-label">LP Sensor Type</label>
+            <select id="R40101" class="form-select">
+              <option selected value="0">Voltage</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="R40102" class="form-label">LP Sensor Max(PSI)</label>
+            <input type="text" class="form-control" id="R40102" value="100" />
+          </div>
+          <div class="col-md-4">
+            <label for="R40103" class="form-label">LP Sensor Min(PSI)</label>
+            <input type="text" class="form-control" id="R40103" value="75" />
+          </div>
+        </div>
+        <!-- CP sensor -->
+        <div class="row mb-2">
+          <div class="col-md-4">
+            <label for="R40104" class="form-label">CP Sensor Type</label>
+            <select id="R40104" class="form-select">
+              <option selected value="0">Voltage</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="R40105" class="form-label">CP Sensor Max(PSI)</label>
+            <input type="text" class="form-control" id="R40105" value="2000" />
+          </div>
+          <div class="col-md-4">
+            <label for="R40106" class="form-label">CP Sensor Min(PSI)</label>
+            <input type="text" class="form-control" id="R40106" value="1800" />
+          </div>
+        </div>
+        <!-- TP sensor -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <label for="R40107" class="form-label">TP Sensor Type</label>
+            <select id="R40107" class="form-select">
+              <option selected value="0">Voltage</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="R40108" class="form-label">TP Sensor Max(PSI)</label>
+            <input type="text" class="form-control" id="R40108" value="400" />
+          </div>
+          <div class="col-md-4">
+            <label for="R40109" class="form-label">TP Sensor Min(PSI)</label>
+            <input type="text" class="form-control" id="R40109" value="350" />
+          </div>
+        </div>
+        <!-- LP, CP and TP voltage -->
+        <div class="row mb-4">
+          <div class="col-md-2">
+            <label for="R40117" class="form-label">LP Voltage Max (V)</label>
+            <input type="text" class="form-control" id="R40117" value="40" />
+          </div>
+          <div class="col-md-2">
+            <label for="R40118" class="form-label">LP Voltage Min (V)</label>
+            <input type="text" class="form-control" id="R40118" value="30" />
+          </div>
+          <div class="col-md-2">
+            <label for="R40119" class="form-label">CP Voltage Max (V)</label>
+            <input type="text" class="form-control" id="R40119" value="50" />
+          </div>
+          <div class="col-md-2">
+            <label for="R40120" class="form-label">CP Voltage Min (V)</label>
+            <input type="text" class="form-control" id="R40120" value="10" />
+          </div>
+          <div class="col-md-2">
+            <label for="R40121" class="form-label">TP Voltage Max (V)</label>
+            <input type="text" class="form-control" id="R40121" value="400" />
+          </div>
+          <div class="col-md-2">
+            <label for="R40122" class="form-label">TP Voltage Min (V)</label>
+            <input type="text" class="form-control" id="R40122" value="400" />
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mb-4">
+          <button class="btn btn-primary" style="width: 10%">Apply</button>
+        </div>
+      </div>
+    </div>
+    <div
+      class="tab-pane fade"
+      id="arrival-statistics"
+      role="tabpanel"
+      aria-labelledby="arrival-statistics-tab"
+    >
+      <!-- Content for Arrival statistics -->
+      <h5 class="bg-dark text-light p-2">Arrival statistics</h5>
+      <div class="container">
+        <!-- Arrivals -->
+        <div class="row mb-2">
+          <div class="col-md-3">
+            <label for="R40036" class="form-label">Arrivals Today</label>
+            <input type="text" class="form-control" id="R40036" value="45" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40037" class="form-label">Arrivals Week</label>
+            <input type="text" class="form-control" id="R40037" value="0" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40038" class="form-label">Arrivals Total</label>
+            <input type="text" class="form-control" id="R40038" value="45" />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="form-control btn btn-primary">Reset</button>
+          </div>
+        </div>
+        <!-- Missrun  -->
+        <div class="row mb-2">
+          <div class="col-md-3">
+            <label for="R40039" class="form-label">Missrun Today</label>
+            <input type="text" class="form-control" id="R40039" value="0" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40040" class="form-label">Missrun Week</label>
+            <input type="text" class="form-control" id="R40040" value="0" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40041" class="form-label">Missrun Total</label>
+            <input type="text" class="form-control" id="R40041" value="45" />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="form-control btn btn-primary">Reset</button>
+          </div>
+        </div>
+        <!-- OnTime  -->
+        <div class="row mb-2">
+          <div class="col-md-3">
+            <label for="R40042" class="form-label">OnTime Today</label>
+            <input type="text" class="form-control" id="R40042" value="99" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40043" class="form-label">OnTime Week</label>
+            <input type="text" class="form-control" id="R40043" value="0" />
+          </div>
+          <div class="col-md-3">
+            <label for="R40044" class="form-label">OnTime Total</label>
+            <input type="text" class="form-control" id="R40044" value="99" />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="form-control btn btn-primary">Reset</button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-5">
+          <button class="btn btn-primary" style="width: 23.5%">
+            Reset all
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

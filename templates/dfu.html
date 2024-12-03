@@ -1,0 +1,80 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- DFU Tab ---------------------------------------->
+<div
+  class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+>
+  <div class="row w-100">
+    <div class="col-md-6 mx-auto">
+      <div class="card p-4 border border-primary gap-4">
+        <button class="btn btn-primary" onclick="SerialCom()">
+          Set to bootloader
+        </button>
+        <button class="btn btn-primary" onclick="connectWithUSB()">
+          DFU Process
+        </button>
+        <button class="btn btn-primary" onclick="displayProcess()">
+          Click
+        </button>
+      </div>
+    </div>
+    <div class="col-md-6" id="dfu-result" style="display: none">
+      <div id="dfu-progress-container">
+        <ul id="dfu-progress-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  function displayProcess() {
+    let logMessages = [
+      "Serial port opened.",
+      "Sent Ctrl + C",
+      "Sent 'import pyb'",
+      "Sent 'pyb.bootloader()' to enter bootloader mode",
+      "Device opened.",
+      "Interface claimed",
+      "Parsing DFU image 1",
+      "Target name: STM32 Bootloader",
+      "Writing Firmware...",
+      "Chunk written successfully: 2048 bytes",
+      "Done parsing DfuSe file.",
+      // Add more messages as needed
+    ];
+
+    const progressList = document.getElementById("dfu-progress-list");
+    const result = document.getElementById("dfu-result");
+    result.style.display = "block"; // Ensure that the result container is visible
+
+    // Array to hold references to progress items (optional, if needed later)
+    let progressItems = [];
+
+    // Function to update the list with each log message
+    const addMessageToList = (message) => {
+      const listItem = document.createElement("li");
+      listItem.textContent = message; // Insert the message as plain text
+      progressList.appendChild(listItem);
+
+      // Save the reference to the new <li> element
+      progressItems.push(listItem);
+
+      // Scroll to the bottom of the progress list
+      progressList.scrollTop = progressList.scrollHeight;
+    };
+
+    let index = 0;
+
+    // Function to display each message with a 1-second interval
+    const displayMessages = () => {
+      if (index < logMessages.length) {
+        addMessageToList(logMessages[index]);
+        index++;
+      } else {
+        clearInterval(intervalId); // Stop the interval when all messages are displayed
+      }
+    };
+
+    // Display messages every 1 second
+    const intervalId = setInterval(displayMessages, 1000);
+  }
+</script>
+{% endblock %}

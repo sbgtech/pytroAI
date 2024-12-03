@@ -1,0 +1,94 @@
+/* Style for the loading spinner in the tcpftp page */
+#tcpftp-loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
+#tcpftp-loading img {
+  width: 50px;
+}
+#tcpftp-result {
+  display: none;
+}
+
+/* Ensure the progress list stays visible in the tcpftp page */
+#tcpftp-progress-list {
+  display: block;
+  list-style-type: none;
+  padding: 0;
+}
+
+#tcpftp-progress-list li {
+  font-size: 14px;
+}
+
+/* Style for the loading spinner in the build page */
+#build-loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
+#build-loading img {
+  width: 50px;
+}
+#build-result {
+  display: none;
+}
+
+/* Ensure the progress list stays visible in the build page */
+#build-progress-list {
+  display: block;
+  list-style-type: none;
+  padding: 0;
+}
+
+#build-progress-list li {
+  font-size: 14px;
+}
+
+.fa-check-circle {
+  color: #0b9b0b;
+}
+.mt-customize {
+  margin-top: 6em;
+}
+
+/* Make tabs full width */
+.nav-tabs {
+  display: flex;
+  justify-content: space-around;
+  width: 100%; /* Ensure tabs stretch across the full width */
+}
+.nav-tabs .nav-item {
+  flex-grow: 1;
+  text-align: center; /* Center the tab text */
+  margin-inline: 1px;
+}
+.nav-tabs .nav-link {
+  background-color: transparent; /* Transparent background */
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+}
+.nav-tabs .nav-link:hover {
+  background-color: #0b5ed7;
+  /* border: none; */
+  border-color: #0b5ed7;
+}
+.nav-tabs .nav-link.active {
+  background-color: #034fc0;
+  color: white;
+  border: none;
+}
+
+/* Make tab content full width */
+.tab-content {
+  width: 100%; /* Ensure content fills entire space */
+}
+
+/* Make tabs responsive */
+@media (max-width: 767px) {
+  .nav-tabs .nav-item {
+    text-align: left; /* Align text to the left on small screens */
+  }
+}
