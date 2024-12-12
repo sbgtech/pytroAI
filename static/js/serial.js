@@ -5,6 +5,34 @@ const DFU_GETSTATUS = 0x03;
 const DFU_CLRSTATUS = 0x04;
 const DFU_ABORT = 0x06;
 
+let progressDFUItems = [];
+
+async function resetDFUProcess() {
+  // Clear the progress list
+  const progressList = document.getElementById("dfu-progress-list");
+  progressList.innerHTML = ""; // Remove all existing list items
+
+  // Hide the loading spinner at first (until upload starts)
+  document.getElementById("dfu-process-loading").style.display = "none";
+
+  // Show the progress container again when a new upload starts
+  document.getElementById("dfu-progress-container").style.display = "block";
+  document.getElementById("dfu-result").style.display = "none";
+}
+
+async function LoadDFUProcess(msg, className) {
+  const progressList = document.getElementById("dfu-progress-list");
+  const result_dfu = document.getElementById("dfu-result");
+  document.getElementById("dfu-process-loading").style.display = "block";
+  result_dfu.style.display = "block";
+  const listItem = document.createElement("li");
+  listItem.textContent = msg;
+  listItem.classList.add("alert");
+  listItem.classList.add(className);
+  progressList.appendChild(listItem);
+  progressDFUItems.push(listItem);
+}
+
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -18,7 +46,9 @@ async function sleep(ms) {
 
 async function SerialCom() {
   try {
+    await resetDFUProcess();
     const port = await navigator.serial.requestPort();
+    document.getElementById("dfu-bootloader-loading").style.display = "block";
 
     // Open the serial port with the desired settings
     await port.open({ baudRate: 9600 });
@@ -45,54 +75,85 @@ async function SerialCom() {
     // Close the writer after sending commands
     writer.releaseLock();
 
-    // await sleep(3000);
-
-    // const userConfirmed = confirm("Do you wish to continue ?");
-
-    // Check if the user clicked "OK" (true) or "Cancel" (false)
-    // if (userConfirmed) {
-    //   // Run another function if user clicks "OK"
-    //   connectWithUSB();
-    // } else {
-    //   console.log("User clicked Cancel.");
-    // }
+    // Wait for 3 seconds before enabling the DFU Process button
+    // const dfuButton = document.getElementById("dfuProcessButton");
+    setTimeout(() => {
+      document.getElementById("dfu-bootloader-loading").style.display = "none";
+      // dfuButton.disabled = false;
+      console.log("DFU Process button enabled");
+    }, 3000);
   } catch (err) {
     console.error("Failed to communicate with the serial port:", err);
   }
 }
-
 async function connectWithUSB() {
   try {
-    // Trigger file selection dialog
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = ".dfu"; // Adjust file types as needed
-    fileInput.onchange = async (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        // process the file as needed
-        await DFU(file);
-      }
-    };
-    fileInput.click();
+    await resetDFUProcess();
+
+    // Step 1: Request USB device selection from the user
+    const device = await navigator.usb.requestDevice({ filters: [] });
+
+    // Step 2: Ensure the selected device is the expected one
+    if (device.productName === "STM32  BOOTLOADER") {
+      // Immediately trigger the file dialog
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".dfu"; // Specify acceptable file types
+      fileInput.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          console.log("Selected file:", file.name);
+          // Proceed with the DFU file processing
+          await DFU(file, device);
+        }
+      };
+
+      // Trigger the file input dialog immediately after device selection
+      fileInput.click();
+
+      // Step 3: Proceed with opening the device, configuration, and claiming the interface
+      await device.open();
+      console.log("Device opened:", device);
+
+      if (device.configuration === null) await device.selectConfiguration(1);
+      await device.claimInterface(0);
+      console.log("Interface claimed");
+    } else {
+      console.log("Selected device does not match the desired product name.");
+    }
   } catch (error) {
-    console.log("ERROR DFU :", error);
+    console.error("Error during DFU process:", error);
   }
 }
 
-async function DFU(file) {
-  const device = await navigator.usb.requestDevice({ filters: [] });
-  if (device.productName === "STM32  BOOTLOADER") {
-    await device.open();
-    console.log("Device opened:", device);
-    if (device.configuration === null) await device.selectConfiguration(1);
-    await device.claimInterface(0);
-    console.log("Interface claimed");
-    await Mass_Erase(device);
-    await parseDfuFile(file, device);
-    await Leave_DFU(device);
+async function DFU(file, device) {
+  let flag = await Mass_Erase(device);
+  if (flag == true) {
+    await LoadDFUProcess("Mass Erase Successful ✅", "alert-success");
   } else {
-    console.log("Selected device does not match the desired product name.");
+    alert("Error occurred during Mass Erase");
+    document.getElementById("dfu-process-loading").style.display = "none";
+    await resetDFUProcess();
+    return;
+  }
+  flag = await parseDfuFile(file, device);
+  if (flag == true) {
+    await LoadDFUProcess("Firmware updated successfully ✅");
+  } else {
+    alert("Error occurred during Firmware update");
+    document.getElementById("dfu-process-loading").style.display = "none";
+    await resetDFUProcess();
+    return;
+  }
+  flag = await Leave_DFU(device);
+  if (flag == true) {
+    await LoadDFUProcess("Device ready for usage ✅");
+    document.getElementById("dfu-process-loading").style.display = "none";
+  } else {
+    alert("Error occurred during Restart");
+    document.getElementById("dfu-process-loading").style.display = "none";
+    await resetDFUProcess();
+    return;
   }
 }
 async function getStatus(device) {
@@ -277,6 +338,7 @@ async function setAddressPointer(device, address) {
 // Function to perform Mass Erase
 async function Mass_Erase(device) {
   try {
+    await LoadDFUProcess("Mass Erase in progress ...");
     // Ensure device is in dfuIDLE state before proceeding
     const isIdle = await handleFaults(device);
     if (isIdle) {
@@ -287,7 +349,7 @@ async function Mass_Erase(device) {
       console.error(
         "Failed to stabilize the device in dfuIDLE state. Exiting..."
       );
-      return;
+      return false;
     }
 
     // Command for mass erase
@@ -327,17 +389,21 @@ async function Mass_Erase(device) {
     const eraseSuccess = await handleFaults(device);
     if (eraseSuccess) {
       console.log("Mass Erase Successful.");
+      return true;
     } else {
       console.error("Failed to stabilize the device after Mass Erase.");
+      return false;
     }
   } catch (error) {
     console.error("Error during Mass Erase:", error.message);
+    return false;
   }
 }
 
 // Function to Leave DFU
 async function Leave_DFU(device) {
   try {
+    console.log("restarting device");
     // Set address pointer to 0x08000000
     await setAddressPointer(device, 0x08000000);
 
@@ -362,10 +428,13 @@ async function Leave_DFU(device) {
       console.log("Leave DFU command sent successfully.");
     } else {
       console.error("Failed to send Leave DFU command. Status:", result.status);
+      return false;
     }
     await getStatus(device);
+    return true;
   } catch (error) {
     console.error("Error Leaving DFU:", error.message);
+    return false;
   }
 }
 
@@ -394,6 +463,7 @@ async function parseDfuFile(file, device) {
   // Number of targets
   const bTargets = dfuPrefix[10];
   console.log(`File contains ${bTargets} DFU images`);
+  await LoadDFUProcess("Parsing firmware file...");
 
   for (let image = 1; image <= bTargets; image++) {
     console.log(`Parsing DFU image ${image}`);
@@ -420,7 +490,7 @@ async function parseDfuFile(file, device) {
     const dwNbElements = new DataView(targetPrefix.buffer).getUint32(270, true);
     const totalSize = new DataView(targetPrefix.buffer).getUint32(266, true);
     console.log(`(${dwNbElements} elements, total size = ${totalSize})`);
-
+    await LoadDFUProcess("Updating firmware...");
     for (let element = 1; element <= dwNbElements; element++) {
       // Parse element header (8 bytes)
       const elementHeader = data.slice(offset, offset + 8);
@@ -477,7 +547,7 @@ async function parseDfuFile(file, device) {
             );
           } catch (error) {
             console.error("Error sending download command:", error.message);
-            break; // Exit the loop on error
+            return false; // Exit the loop on error
           }
 
           // Get status again to verify the device state
@@ -486,24 +556,18 @@ async function parseDfuFile(file, device) {
 
           if (!status || status !== 0x05) {
             console.log("Error occurred, stopping firmware upload.");
-            break;
+            return false;
           }
 
           // Increment the address for the next chunk
           dwElementAddress += 2048;
         } catch (error) {
           console.error("Error during firmware upload:", error.message);
-          break;
+          return false;
         }
       }
     }
+    return true;
   }
-
-  // Check for leftover bytes
-  const remainingBytes = data.length - offset;
-  if (remainingBytes > 0) {
-    console.log(`${remainingBytes} bytes leftover.`);
-  }
-
   console.log("Done parsing DfuSe file.");
 }

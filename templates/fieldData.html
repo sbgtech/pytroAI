@@ -1,0 +1,262 @@
+{% extends 'index.html' %} {% block content %}
+<!---------------------------------------- Field Data Tab ---------------------------------------->
+<div class="mt-4 d-flex flex-column justify-content-center align-items-center">
+  <div class="row w-100">
+    <div class="col-md-3">
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Well status</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Arrival last 5 AVG</span
+              ><span id="arrival_last_5_avg"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Arrival last 10 AVG</span
+              ><span id="arrival_last_10_avg"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Tubing PSI</span><span id="tubing_psi"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Casing PSI</span><span id="casing_psi"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Line PSI</span><span id="line_psi"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Sales data</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Flow Rate</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Volume today</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Volume yesterday</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Static PSI</span><span>0 PSI</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>DP in lnH2O</span><span>0 PSI</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Accumulated Vol</span><span>0 MCF</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Injection data</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Flow Rate</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Volume today</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Volume yesterday</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Static PSI</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>DP in lnH2O</span><span>0 PSI</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Accumulated Vol</span><span>0 MCF</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border border-primary">
+        <div class="card-header">Arrivals</div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 1</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 2</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 3</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 4</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 5</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 6</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 7</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 8</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 9</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 10</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 11</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 12</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 13</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 14</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 15</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 16</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 17</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 18</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 19</span><span>No arrivals</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Arrival 20</span><span>No arrivals</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Valve state & Control</div>
+          <div class="p-2">
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex justify-content-between">
+                <span class="fw-bold">Valve status</span
+                ><span class="bg-primary px-2 py-1 text-light text-center"
+                  >Open</span
+                >
+              </div>
+              <div class="d-flex justify-content-between gap-2">
+                <button class="btn btn-success w-100">Open</button>
+                <button class="btn btn-danger w-100">Shutin</button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <label for="R40112">Mode</label>
+              <input type="text" class="form-control" id="R40112" />
+            </div>
+            <div class="mt-2">
+              <label for="R40113">Open Time</label>
+              <input type="text" class="form-control" id="R40113" />
+            </div>
+            <div class="mt-2">
+              <label for="R40114">Shutin Time</label>
+              <input type="text" class="form-control" id="R40114" />
+            </div>
+            <div class="mt-2">
+              <label for="R40115">Afterflow Time</label>
+              <input type="text" class="form-control" id="R40115" />
+            </div>
+            <div class="mt-2">
+              <label for="R40116">Mandatory Shutin Timer</label>
+              <input type="text" class="form-control" id="R40116" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Liquid production</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Tank 1 vol today</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Tank 1 vol PD</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Tank 2 vol today</span><span>0 MCF</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Tank 2 vol PD</span><span>0 MCF</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Plunger State</div>
+          <div><p class="bg-primary p-1 text-light text-center">Open</p></div>
+        </div>
+      </div>
+      <div class="col-md-12 mb-4">
+        <div class="card border border-primary">
+          <div class="card-header">Telemetry data</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Well Name</span><span></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Last Update</span><span></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Unique ID</span><span>2d:r5:t5:98v:ee:GG</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>FW. Version</span><span></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Battery Voltage (V)</span><span></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>System Clock</span><span></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>HW. Version</span><span></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.onload = function () {
+    document.getElementById("arrival_last_5_avg").textContent =
+      5 || "Loading...";
+    document.getElementById("arrival_last_10_avg").textContent =
+      5 || "Loading...";
+    document.getElementById("tubing_psi").textContent =
+      "50 PSI" || "Loading...";
+    document.getElementById("casing_psi").textContent =
+      "50 PSI" || "Loading...";
+    document.getElementById("line_psi").textContent = "50 PSI" || "Loading...";
+  };
+</script>
+
+{% endblock %}

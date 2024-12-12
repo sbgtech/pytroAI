@@ -1,3 +1,12 @@
+/* Style for the loading spinner in the build page */
+#dfu-bootloader-loading {
+  display: none;
+  text-align: center;
+}
+#dfu-process-loading {
+  display: none;
+  text-align: center;
+}
 /* Style for the loading spinner in the tcpftp page */
 #tcpftp-loading {
   display: none;
@@ -56,34 +65,35 @@
 /* Make tabs full width */
 .nav-tabs {
   display: flex;
-  justify-content: space-around;
-  width: 100%; /* Ensure tabs stretch across the full width */
+  width: 100%;
+  /* border-bottom: 2px solid #007bff; */
 }
 .nav-tabs .nav-item {
-  flex-grow: 1;
-  text-align: center; /* Center the tab text */
-  margin-inline: 1px;
+  flex: 1; /* Make each tab take up equal space */
+  text-align: center;
+  padding-inline: 2px;
 }
 .nav-tabs .nav-link {
-  background-color: transparent; /* Transparent background */
-  color: white;
+  width: 100%;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 0;
+  padding: 10px 0;
   font-weight: bold;
-  font-size: 18px;
 }
 .nav-tabs .nav-link:hover {
-  background-color: #0b5ed7;
-  /* border: none; */
-  border-color: #0b5ed7;
+  background-color: #1c64d1;
 }
 .nav-tabs .nav-link.active {
   background-color: #034fc0;
   color: white;
-  border: none;
 }
-
-/* Make tab content full width */
 .tab-content {
-  width: 100%; /* Ensure content fills entire space */
+  background: #ffffff;
+  /* border: 1px solid #007bff; */
+  border-top: none;
+  padding: 16px;
 }
 
 /* Make tabs responsive */
@@ -91,4 +101,14 @@
   .nav-tabs .nav-item {
     text-align: left; /* Align text to the left on small screens */
   }
+}
+
+.cont {
+  columns: 3;
+  column-gap: 5px;
+}
+.cont > div {
+  background: #c1c1ff;
+  margin-bottom: 5px;
+  break-inside: avoid;
 }

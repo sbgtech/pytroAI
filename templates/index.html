@@ -3,18 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pytro AI</title>
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
     />
-    <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css" />
     <script src="/static/js/serial.js"></script>
-    <title>Pytro AI</title>
   </head>
   <body>
     <div class="container-fluid">
@@ -28,74 +28,1773 @@
           height="47px"
         />
       </div>
+
       <!---------------------------------------- Tab navigation ---------------------------------------->
-      <ul class="nav nav-tabs w-100" id="mainTab" role="tablist">
-        <li class="nav-item bg-primary" role="presentation">
+      <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+        <li class="nav-item" role="presentation">
           <a
-            class="nav-link {% if request.endpoint == 'device' or request.endpoint == '' %}active{% endif %}"
-            id="device-tab"
-            href="{{ url_for('device') }}"
+            class="nav-link show active"
+            id="tab1"
+            data-bs-toggle="tab"
+            href="#deviceInformation-tab"
             role="tab"
-            aria-controls="device"
+            aria-controls="deviceInformation-tab"
             aria-selected="true"
-            >Device</a
           >
+            Device information
+          </a>
         </li>
-        <li class="nav-item bg-primary" role="presentation">
+        <li class="nav-item" role="presentation">
           <a
-            class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}"
-            id="settings-tab"
-            href="{{ url_for('settings') }}"
+            class="nav-link"
+            id="tab2"
+            data-bs-toggle="tab"
+            href="#settingsFieldData-tab"
             role="tab"
-            aria-controls="settings"
+            aria-controls="settingsFieldData-tab"
             aria-selected="false"
-            >Settings</a
           >
+            Settings & Field data
+          </a>
         </li>
-        <li class="nav-item bg-primary" role="presentation">
+        <li class="nav-item" role="presentation">
           <a
-            class="nav-link {% if request.endpoint == 'dfu' %}active{% endif %}"
-            id="dfu-tab"
-            href="{{ url_for('dfu') }}"
+            class="nav-link"
+            id="tab3"
+            data-bs-toggle="tab"
+            href="#build-tab"
             role="tab"
-            aria-controls="dfu"
+            aria-controls="build-tab"
             aria-selected="false"
-            >DFU</a
           >
-        </li>
-        <li class="nav-item bg-primary" role="presentation">
-          <a
-            class="nav-link {% if request.endpoint == 'tcpftp' %}active{% endif %}"
-            id="tcpftp-tab"
-            href="{{ url_for('tcpftp') }}"
-            role="tab"
-            aria-controls="tcpftp"
-            aria-selected="false"
-            >TCP FTP</a
-          >
-        </li>
-        <li class="nav-item bg-primary" role="presentation">
-          <a
-            class="nav-link {% if request.endpoint == 'build' %}active{% endif %}"
-            id="build-tab"
-            href="{{ url_for('build') }}"
-            role="tab"
-            aria-controls="build"
-            aria-selected="false"
-            >Build</a
-          >
+            Build
+          </a>
         </li>
       </ul>
 
-      <!---------------------------------------- Tab content ---------------------------------------->
-      <div class="tab-content w-100" id="myTabContent">
-        {% block content %}
-        <!-- This is where the content for each tab will go -->
+      <!-- Main Tab Contents -->
+      <div class="tab-content">
+        <!---------------------------------- Device information Tab --------------------------------->
+        <div
+          class="tab-pane fade show active"
+          id="deviceInformation-tab"
+          role="tabpanel"
+          aria-labelledby="tab1"
+        >
+          <!-- Sub-Tabs for device information -->
+          <ul class="nav nav-tabs" id="subTabs1" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link show active"
+                id="device-tab"
+                data-bs-toggle="tab"
+                href="#device"
+                role="tab"
+                aria-controls="device"
+                aria-selected="true"
+              >
+                Device
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link"
+                id="dfu-tab"
+                data-bs-toggle="tab"
+                href="#dfu"
+                role="tab"
+                aria-controls="dfu"
+                aria-selected="false"
+              >
+                DFU
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link"
+                id="tcpftp-tab"
+                data-bs-toggle="tab"
+                href="#tcpftp"
+                role="tab"
+                aria-controls="tcpftp"
+                aria-selected="false"
+              >
+                TCP FTP
+              </a>
+            </li>
+          </ul>
 
-        {% endblock %}
+          <!-- Sub-Tabs Content -->
+          <div class="tab-content mt-3">
+            <!----------------------------------- device sub-tab ----------------------------------->
+            <div
+              class="tab-pane fade show active"
+              id="device"
+              role="tabpanel"
+              aria-labelledby="device-tab"
+            >
+              <div>
+                <div
+                  class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+                >
+                  <button id="serialButton" class="btn btn-primary">
+                    Connect to Serial Port
+                  </button>
+                  <p class="mt-3" id="statusMessage">
+                    Click the button above to connect to the serial port.
+                  </p>
+                  <table
+                    class="table table-hover table-striped"
+                    id="fileTable"
+                    style="display: none"
+                  >
+                    <thead>
+                      <tr>
+                        <th>File Type</th>
+                        <th>File Name</th>
+                        <th>Size</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>.....</td>
+                        <td>.....</td>
+                        <td>.....</td>
+                      </tr>
+                      <tr>
+                        <td>.....</td>
+                        <td>.....</td>
+                        <td>.....</td>
+                      </tr>
+                      <tr>
+                        <td>.....</td>
+                        <td>.....</td>
+                        <td>.....</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <!----------------------------------- DFU sub-tab ----------------------------------->
+            <div
+              class="tab-pane fade"
+              id="dfu"
+              role="tabpanel"
+              aria-labelledby="dfu-tab"
+            >
+              <div
+                class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+              >
+                <div class="row w-100">
+                  <div class="col-md-6 mx-auto">
+                    <div class="card p-4 border border-primary gap-4">
+                      <button class="btn btn-primary" onclick="SerialCom()">
+                        Set to bootloader
+                      </button>
+                      <div id="dfu-bootloader-loading">
+                        <img
+                          src="https://i.gifer.com/7plX.gif"
+                          alt="Loading..."
+                          width="50"
+                        />
+                        <div id="loading-message">
+                          Processing, please wait...
+                        </div>
+                      </div>
+                      <button
+                        class="btn btn-primary"
+                        onclick="connectWithUSB()"
+                        id="dfuProcessButton"
+                      >
+                        DFU Process
+                      </button>
+                      <div id="dfu-process-loading">
+                        <img
+                          src="https://i.gifer.com/7plX.gif"
+                          alt="Loading..."
+                          width="50"
+                        />
+                        <div id="loading-message">
+                          Processing, please wait...
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card p-4 border alert alert-danger mt-2">
+                      <div>
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <span>
+                          Please do not unplug or turn off the device while
+                          updating the firmware.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6" id="dfu-result" style="display: none">
+                    <div id="dfu-progress-container">
+                      <ul id="dfu-progress-list"></ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!----------------------------------- TCP FTP sub-tab ----------------------------------->
+            <div
+              class="tab-pane fade"
+              id="tcpftp"
+              role="tabpanel"
+              aria-labelledby="tcpftp-tab"
+            >
+              <div
+                class="container mt-customize d-flex flex-column justify-content-center align-items-center"
+              >
+                <div class="row w-100">
+                  <div class="col-md-6 mx-auto">
+                    <div class="card p-4 border border-primary">
+                      <form
+                        id="uploadFormTcpftp"
+                        action="{{ url_for('upload_file') }}"
+                        method="POST"
+                        enctype="multipart/form-data"
+                      >
+                        <label for="tcpftp_file" class="form-label fs-4"
+                          >Upload files</label
+                        >
+                        <input
+                          class="form-control"
+                          type="file"
+                          name="tcpftp_file"
+                          id="tcpftp_file"
+                          required
+                          accept=".zip"
+                          onchange="validateTCPFTPFile()"
+                        />
+                      </form>
+                    </div>
+                  </div>
+                  <div class="col-md-6" id="tcpftp-result">
+                    <div
+                      id="tcpftp-error-container"
+                      class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+                      style="display: none"
+                    >
+                      <p
+                        id="tcpftp-error-message"
+                        class="text-center text-light p-0 m-0"
+                      ></p>
+                    </div>
+
+                    <div id="tcpftp-progress-container">
+                      <ul id="tcpftp-progress-list"></ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!--------------------------------- Settings & Field data Tab ------------------------------->
+        <div
+          class="tab-pane fade"
+          id="settingsFieldData-tab"
+          role="tabpanel"
+          aria-labelledby="tab2"
+        >
+          <!-- Sub-Tabs for Tab 2 -->
+          <ul class="nav nav-tabs" id="subTabs2" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active"
+                id="settings"
+                data-bs-toggle="tab"
+                href="#settings-tab"
+                role="tab"
+                aria-controls="settings-tab"
+                aria-selected="true"
+              >
+                Settings
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link"
+                id="fieldData"
+                data-bs-toggle="tab"
+                href="#fieldData-tab"
+                role="tab"
+                aria-controls="fieldData-tab"
+                aria-selected="false"
+              >
+                Field Data
+              </a>
+            </li>
+          </ul>
+
+          <!-- Sub-Tabs Content -->
+          <div class="tab-content">
+            <!---------------------------------- Settings Sub Tab --------------------------------->
+            <div
+              class="tab-pane fade show active"
+              id="settings-tab"
+              role="tabpanel"
+              aria-labelledby="settings"
+            >
+              <!-- Sub Sub Tabs for Tab 2 -->
+              <ul class="nav nav-tabs" id="subSubTabs2" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <a
+                    class="nav-link active"
+                    id="common-settings"
+                    data-bs-toggle="tab"
+                    href="#common-settings-tab"
+                    role="tab"
+                    aria-controls="common-settings-tab"
+                    aria-selected="true"
+                  >
+                    Common settings
+                  </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a
+                    class="nav-link"
+                    id="arrival-statistics"
+                    data-bs-toggle="tab"
+                    href="#arrival-statistics-tab"
+                    role="tab"
+                    aria-controls="arrival-statistics-tab"
+                    aria-selected="false"
+                  >
+                    Arrival statistics
+                  </a>
+                </li>
+              </ul>
+              <div class="tab-content mt-3">
+                <!----------------------------- Common settings sub sub Tab ---------------------------->
+                <div
+                  class="tab-pane fade show active"
+                  id="common-settings-tab"
+                  role="tabpanel"
+                  aria-labelledby="common-settings"
+                >
+                  <div
+                    class="tab-pane fade show active"
+                    id="common-settings"
+                    role="tabpanel"
+                    aria-labelledby="common-settings-tab"
+                  >
+                    <!-- Content for Common settings -->
+                    <h5 class="bg-dark text-light p-2">
+                      Controller configuration
+                    </h5>
+                    <div class="container">
+                      <!-- production method, missrun and well depth -->
+                      <div class="row mb-2">
+                        <div class="col-md-3">
+                          <label for="R40112" class="form-label"
+                            >Production Method</label
+                          >
+                          <select id="R40112" class="form-select">
+                            <option selected value="0">Timer Mode</option>
+                          </select>
+                        </div>
+                        <div class="col-md-3">
+                          <label for="R40110" class="form-label"
+                            >Missrun Max</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40110"
+                            value="0"
+                          />
+                        </div>
+                        <div class="col-md-3">
+                          <label for="R40111" class="form-label"
+                            >Detect False Arrivals</label
+                          >
+                          <select id="R40111" class="form-select">
+                            <option selected value="0">Disable</option>
+                            <option value="1">Enable</option>
+                          </select>
+                        </div>
+                        <div class="col-md-3">
+                          <label for="R40126" class="form-label"
+                            >Well Depth</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40126"
+                            value="45"
+                          />
+                        </div>
+                      </div>
+                      <!-- Afterflow -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="AfterflowH" class="form-label"
+                            >Afterflow Time (hrs)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="AfterflowH"
+                            value="12"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="AfterflowM" class="form-label"
+                            >Afterflow Time (min)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="AfterflowM"
+                            value="58"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="AfterflowS" class="form-label"
+                            >Afterflow Time (sec)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="AfterflowS"
+                            value="05"
+                          />
+                        </div>
+                      </div>
+                      <!-- Open Time -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="OpenH" class="form-label"
+                            >Open Time (hrs)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="OpenH"
+                            value="08"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="OpenM" class="form-label"
+                            >Open Time (min)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="OpenM"
+                            value="36"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="OpenS" class="form-label"
+                            >Open Time (sec)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="OpenS"
+                            value="00"
+                          />
+                        </div>
+                      </div>
+                      <!-- Shutin Time -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="ShutinH" class="form-label"
+                            >Shutin Time (hrs)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="ShutinH"
+                            value="29"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="ShutinM" class="form-label"
+                            >Shutin Time (min)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="ShutinM"
+                            value="44"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="ShutinS" class="form-label"
+                            >Shutin Time (sec)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="ShutinS"
+                            value="17"
+                          />
+                        </div>
+                      </div>
+                      <!-- Mandatory Time -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="MandShutinH" class="form-label"
+                            >Mandatory Time (hrs)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="MandShutinH"
+                            value="24"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="MandShutinM" class="form-label"
+                            >Mandatory Time (min)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="MandShutinM"
+                            value="31"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="MandShutinS" class="form-label"
+                            >Mandatory Time (sec)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="MandShutinS"
+                            value="01"
+                          />
+                        </div>
+                      </div>
+                      <!-- HiLo -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="R40123" class="form-label"
+                            >HiLo Mode Enable</label
+                          >
+                          <select id="R40123" class="form-select">
+                            <option selected value="0">Disable</option>
+                            <option value="1">Enable</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40124" class="form-label"
+                            >HiLo High Threshold</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40124"
+                            value="10"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40125" class="form-label"
+                            >HiLo Low Threshold</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40125"
+                            value="9"
+                          />
+                        </div>
+                      </div>
+                      <!-- LP sensor -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="R40101" class="form-label"
+                            >LP Sensor Type</label
+                          >
+                          <select id="R40101" class="form-select">
+                            <option selected value="0">Voltage</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40102" class="form-label"
+                            >LP Sensor Max(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40102"
+                            value="100"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40103" class="form-label"
+                            >LP Sensor Min(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40103"
+                            value="75"
+                          />
+                        </div>
+                      </div>
+                      <!-- CP sensor -->
+                      <div class="row mb-2">
+                        <div class="col-md-4">
+                          <label for="R40104" class="form-label"
+                            >CP Sensor Type</label
+                          >
+                          <select id="R40104" class="form-select">
+                            <option selected value="0">Voltage</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40105" class="form-label"
+                            >CP Sensor Max(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40105"
+                            value="2000"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40106" class="form-label"
+                            >CP Sensor Min(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40106"
+                            value="1800"
+                          />
+                        </div>
+                      </div>
+                      <!-- TP sensor -->
+                      <div class="row mb-4">
+                        <div class="col-md-4">
+                          <label for="R40107" class="form-label"
+                            >TP Sensor Type</label
+                          >
+                          <select id="R40107" class="form-select">
+                            <option selected value="0">Voltage</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40108" class="form-label"
+                            >TP Sensor Max(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40108"
+                            value="400"
+                          />
+                        </div>
+                        <div class="col-md-4">
+                          <label for="R40109" class="form-label"
+                            >TP Sensor Min(PSI)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40109"
+                            value="350"
+                          />
+                        </div>
+                      </div>
+                      <!-- LP, CP and TP voltage -->
+                      <div class="row mb-4">
+                        <div class="col-md-2">
+                          <label for="R40117" class="form-label"
+                            >LP Voltage Max (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40117"
+                            value="40"
+                          />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="R40118" class="form-label"
+                            >LP Voltage Min (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40118"
+                            value="30"
+                          />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="R40119" class="form-label"
+                            >CP Voltage Max (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40119"
+                            value="50"
+                          />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="R40120" class="form-label"
+                            >CP Voltage Min (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40120"
+                            value="10"
+                          />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="R40121" class="form-label"
+                            >TP Voltage Max (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40121"
+                            value="400"
+                          />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="R40122" class="form-label"
+                            >TP Voltage Min (V)</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="R40122"
+                            value="400"
+                          />
+                        </div>
+                      </div>
+                      <div class="d-flex justify-content-end mb-4">
+                        <button class="btn btn-primary" style="width: 10%">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!----------------------------- arrival statistics sub sub Tab ---------------------------->
+                <div
+                  class="tab-pane fade"
+                  id="arrival-statistics-tab"
+                  role="tabpanel"
+                  aria-labelledby="arrival-statistics"
+                >
+                  <!-- Content for Arrival statistics -->
+                  <h5 class="bg-dark text-light p-2">Arrival statistics</h5>
+                  <div class="container">
+                    <!-- Arrivals -->
+                    <div class="row mb-2">
+                      <div class="col-md-3">
+                        <label for="R40036" class="form-label"
+                          >Arrivals Today</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40036"
+                          value="45"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40037" class="form-label"
+                          >Arrivals Week</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40037"
+                          value="0"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40038" class="form-label"
+                          >Arrivals Total</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40038"
+                          value="45"
+                        />
+                      </div>
+                      <div class="col-md-3 d-flex align-items-end">
+                        <button class="form-control btn btn-primary">
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Missrun  -->
+                    <div class="row mb-2">
+                      <div class="col-md-3">
+                        <label for="R40039" class="form-label"
+                          >Missrun Today</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40039"
+                          value="0"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40040" class="form-label"
+                          >Missrun Week</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40040"
+                          value="0"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40041" class="form-label"
+                          >Missrun Total</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40041"
+                          value="45"
+                        />
+                      </div>
+                      <div class="col-md-3 d-flex align-items-end">
+                        <button class="form-control btn btn-primary">
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    <!-- OnTime  -->
+                    <div class="row mb-2">
+                      <div class="col-md-3">
+                        <label for="R40042" class="form-label"
+                          >OnTime Today</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40042"
+                          value="99"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40043" class="form-label"
+                          >OnTime Week</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40043"
+                          value="0"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label for="R40044" class="form-label"
+                          >OnTime Total</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="R40044"
+                          value="99"
+                        />
+                      </div>
+                      <div class="col-md-3 d-flex align-items-end">
+                        <button class="form-control btn btn-primary">
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-5">
+                      <button class="btn btn-primary" style="width: 23.5%">
+                        Reset all
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!----------------------------- Field data sub Tab ---------------------------->
+            <div
+              class="tab-pane fade"
+              id="fieldData-tab"
+              role="tabpanel"
+              aria-labelledby="fieldData"
+            >
+              <div
+                class="mt-4 d-flex flex-column justify-content-center align-items-center"
+              >
+                <div class="row w-100">
+                  <div class="col-md-3">
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Well status</div>
+                        <ul class="list-group list-group-flush">
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Arrival last 5 AVG</span
+                            ><span id="arrival_last_5_avg"></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Arrival last 10 AVG</span
+                            ><span id="arrival_last_10_avg"></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Tubing PSI</span><span id="tubing_psi"></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Casing PSI</span><span id="casing_psi"></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Line PSI</span><span id="line_psi"></span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Sales data</div>
+                        <ul class="list-group list-group-flush">
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Flow Rate</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Volume today</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Volume yesterday</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Static PSI</span><span>0 PSI</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>DP in lnH2O</span><span>0 PSI</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Accumulated Vol</span><span>0 MCF</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Injection data</div>
+                        <ul class="list-group list-group-flush">
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Flow Rate</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Volume today</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Volume yesterday</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Static PSI</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>DP in lnH2O</span><span>0 PSI</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Accumulated Vol</span><span>0 MCF</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="card border border-primary">
+                      <div class="card-header">Arrivals</div>
+                      <ul class="list-group list-group-flush">
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 1</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 2</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 3</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 4</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 5</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 6</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 7</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 8</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 9</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 10</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 11</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 12</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 13</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 14</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 15</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 16</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 17</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 18</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 19</span><span>No arrivals</span>
+                        </li>
+                        <li
+                          class="list-group-item d-flex justify-content-between"
+                        >
+                          <span>Arrival 20</span><span>No arrivals</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Valve state & Control</div>
+                        <div class="p-2">
+                          <div class="d-flex flex-column gap-2">
+                            <div class="d-flex justify-content-between">
+                              <span class="fw-bold">Valve status</span
+                              ><span
+                                class="bg-primary rounded px-2 py-1 text-light text-center"
+                                >Open</span
+                              >
+                            </div>
+                            <div class="d-flex justify-content-between gap-2">
+                              <button class="btn btn-success w-100">
+                                Open
+                              </button>
+                              <button class="btn btn-danger w-100">
+                                Shutin
+                              </button>
+                            </div>
+                          </div>
+                          <div class="mt-2">
+                            <label for="R40112">Mode</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="R40112"
+                            />
+                          </div>
+                          <div class="mt-2">
+                            <label for="R40113">Open Time</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="R40113"
+                            />
+                          </div>
+                          <div class="mt-2">
+                            <label for="R40114">Shutin Time</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="R40114"
+                            />
+                          </div>
+                          <div class="mt-2">
+                            <label for="R40115">Afterflow Time</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="R40115"
+                            />
+                          </div>
+                          <div class="mt-2">
+                            <label for="R40116">Mandatory Shutin Timer</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="R40116"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Liquid production</div>
+                        <ul class="list-group list-group-flush">
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Tank 1 vol today</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Tank 1 vol PD</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Tank 2 vol today</span><span>0 MCF</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Tank 2 vol PD</span><span>0 MCF</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Plunger State</div>
+                        <div>
+                          <p class="bg-primary p-1 text-light text-center">
+                            Open
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                      <div class="card border border-primary">
+                        <div class="card-header">Telemetry data</div>
+                        <ul class="list-group list-group-flush">
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Well Name</span><span></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Last Update</span><span></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Unique ID</span
+                            ><span>2d:r5:t5:98v:ee:GG</span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>FW. Version</span><span></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>Battery Voltage (V)</span><span></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>System Clock</span><span></span>
+                          </li>
+                          <li
+                            class="list-group-item d-flex justify-content-between"
+                          >
+                            <span>HW. Version</span><span></span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!---------------------------------------- Build Tab ---------------------------------------->
+        <div
+          class="tab-pane fade"
+          id="build-tab"
+          role="tabpanel"
+          aria-labelledby="tab3"
+        >
+          <div
+            class="container mt-customize d-flex justify-content-center align-items-center"
+          >
+            <div class="row w-100">
+              <div class="col-md-6 mx-auto">
+                <div class="card p-4 border border-primary">
+                  <h3 class="card-title text-center">
+                    Cloud Micropython Build
+                  </h3>
+                  <form
+                    id="uploadFormBuild"
+                    action="{{ url_for('upload_file') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                  >
+                    <input
+                      type="hidden"
+                      name="username"
+                      id="username"
+                      value="{{username}}"
+                    />
+                    <input
+                      type="hidden"
+                      name="user_room"
+                      id="userRoom"
+                      value=""
+                    />
+                    <div class="mb-3">
+                      <label for="board_name" class="form-label"
+                        >Board Name</label
+                      >
+                      <select
+                        class="form-select"
+                        aria-label="Default select example"
+                        name="board_name"
+                        id="board_name"
+                        required
+                      >
+                        <option selected disabled value="">
+                          Choose device
+                        </option>
+                        <option value="RECON_V2">RECON CONTROLLER V2</option>
+                        <option value="PYDAQ_S200WE">PYDAQ S200WE</option>
+                        <option value="PYDAQ_B200">PYDAQ B200</option>
+                        <option value="PYTITAN">PYTITAN</option>
+                        <option value="ODIN-G">ODIN-G</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="firmware_version" class="form-label"
+                        >Firmware version</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="firmware_version"
+                        name="firmware_version"
+                        placeholder="E.g. 1.0.1"
+                        maxlength="16"
+                        required
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label for="build_file" class="form-label"
+                        >Choose a file</label
+                      >
+                      <input
+                        class="form-control"
+                        type="file"
+                        name="build_file"
+                        id="build_file"
+                        required
+                        accept=".zip"
+                        onchange="validateBuildFile()"
+                      />
+                    </div>
+                    <div class="d-flex justify-content-center">
+                      <button
+                        type="submit"
+                        class="btn btn-primary w-25 fw-bold"
+                        disabled
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </form>
+
+                  <div id="build-loading">
+                    <img src="https://i.gifer.com/7plX.gif" alt="Loading..." />
+                    <div id="loading-message">Processing, please wait...</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6" id="build-result">
+                <div
+                  id="build-error-container"
+                  class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+                  style="display: none"
+                >
+                  <p
+                    id="build-error-message"
+                    class="text-center text-light p-0 m-0"
+                  ></p>
+                </div>
+
+                <div id="build-progress-container">
+                  <ul id="build-progress-list"></ul>
+                </div>
+
+                <div id="build-result-container" style="display: none">
+                  <a
+                    id="download-link"
+                    href=""
+                    class="btn btn-success"
+                    target="_blank"
+                    download
+                    >Download the build files (.zip)</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- the build process for the build tab -->
+    <script>
+      // Initialize the SocketIO client
+      const socket = io("https://build.s2c.io", {
+        transports: ["websocket"],
+        path: "/socket.io/", // Ensure the path matches Nginx configuration
+        reconnection: true,
+        reconnectionAttempts: 5, // Number of reconnection attempts
+        reconnectionDelay: 1000, // Delay between attempts (in ms)
+        timeout: 20000, // Adjust timeout if needed
+      });
+
+      // Array to store references to list items
+      const progressItems = [];
+
+      // Store the session ID (sid) on the client side
+      let userRoom = null;
+
+      // When the user connects, store their SID (session ID)
+      socket.on("connect", function () {
+        console.log("Connected with socket ID:", socket.id);
+        // Set the value of the existing input field
+        const socketInput = document.getElementById("userRoom");
+        if (socketInput) {
+          socketInput.value = socket.id; // Update the hidden input with the socket ID
+        } else {
+          console.error("userRoom input not found in the form.");
+        }
+      });
+      // Listen for progress updates from the server
+      socket.on("progress", function (data) {
+        const progressList = document.getElementById("build-progress-list");
+
+        const result = document.getElementById("build-result");
+        result.style.display = "block";
+
+        // Create a new <li> element for the progress update
+        const listItem = document.createElement("li");
+        //listItem.textContent = data.message;
+        // Use insertAdjacentHTML to parse the HTML properly
+        listItem.insertAdjacentHTML("beforeend", data.message); // Insert as HTML, not plain text
+
+        // Append the <li> element to the list
+        progressList.appendChild(listItem);
+
+        // Save the reference to the new <li> element
+        progressItems.push(listItem);
+
+        // Scroll to the bottom of the progress list
+        progressList.scrollTop = progressList.scrollHeight;
+
+        // Check if the message is 'in progress'
+        if (data.message.includes("...")) {
+          // If in progress, let's keep it visible
+          listItem.style.display = "block";
+        }
+
+        // Check if the message is 'successfully' processed
+        if (data.message.includes("successfully")) {
+          // After showing "successfully", hide the "in progress" message
+          progressItems.forEach((item) => {
+            if (item.textContent.includes("...")) {
+              item.style.display = "none"; // Hide the in-progress item
+            }
+          });
+
+          // Show the "successfully" message
+          listItem.style.display = "block"; // Ensure the success message is visible
+        }
+      });
+
+      // Show the loading spinner when the form is submitted
+      document
+        .getElementById("uploadFormBuild")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          // Ensure the hidden input contains the user room
+          const socketInput = document.getElementById("userRoom");
+          if (!socketInput.value) {
+            console.error("Socket ID (user room) is missing!");
+            return;
+          }
+
+          // Reset the progress and error containers before new upload
+          resetUI();
+
+          // Show the loading spinner
+          document.getElementById("build-loading").style.display = "block";
+
+          // Show the progress container to display the progress messages
+          document.getElementById("build-progress-container").style.display =
+            "block";
+
+          // Create a FormData object from the form
+          const formData = new FormData(this);
+
+          // Add userRoom (SID) to the form data
+          formData.append("user_room", socketInput.value);
+
+          try {
+            // Send the form data via AJAX
+            const response = await fetch('{{ url_for("upload_file") }}', {
+              method: "POST",
+              body: formData,
+            });
+
+            const data = await response.json();
+            if (data.status === "success") {
+              // Display the success message and download link
+              document.getElementById("download-link").href = data.zip_file;
+              document.getElementById("build-result-container").style.display =
+                "block";
+              document.getElementById("build-loading").style.display = "none";
+            } else {
+              // Display error message if any
+              document.getElementById("build-error-message").textContent =
+                data.message;
+              document.getElementById("build-error-container").style.display =
+                "block";
+              // Hide the loading spinner
+              document.getElementById("loading").style.display = "none";
+            }
+          } catch (error) {
+            console.log("Error uploading file:", error);
+            document.getElementById("build-loading").style.display = "none";
+          }
+        });
+
+      // Function to reset the UI (clear progress and error containers)
+      function resetUI() {
+        // Clear the progress list
+        const progressList = document.getElementById("build-progress-list");
+        progressList.innerHTML = ""; // Remove all existing list items
+
+        // Hide the result container (we don't want to show it initially)
+        document.getElementById("build-result-container").style.display =
+          "none";
+
+        // Hide the error container and clear its message
+        document.getElementById("build-error-container").style.display = "none";
+        document.getElementById("build-error-message").textContent = "";
+
+        // Hide the loading spinner at first (until upload starts)
+        document.getElementById("build-loading").style.display = "none";
+
+        // Show the progress container again when a new upload starts
+        document.getElementById("build-progress-container").style.display =
+          "block";
+      }
+
+      function validateBuildFile() {
+        const fileInput = document.getElementById("build_file");
+        const filePath = fileInput.value;
+
+        // Only validate if the user has selected a file
+        if (filePath) {
+          const allowedExtensions = /(\.zip)$/i;
+
+          if (!allowedExtensions.test(filePath)) {
+            alert("Please upload a file with a .zip extension.");
+            fileInput.value = ""; // Clear the input
+          }
+        }
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- for the device tab -->
+    <script>
+      // Function for handling serial communication
+      async function SerialCom2() {
+        try {
+          // Request the serial port
+          const port = await navigator.serial.requestPort();
+          // Open the serial port with the desired settings
+          await port.open({ baudRate: 9600 });
+          console.log("Serial port opened:", port.getInfo());
+          document.getElementById("serialButton").style.display = "none";
+          document.getElementById("statusMessage").textContent =
+            "Successfully connected to the serial port!";
+          document.getElementById("fileTable").style.display = "block";
+        } catch (err) {
+          console.error("Failed to communicate with the serial port:", err);
+          document.getElementById("statusMessage").textContent =
+            "Failed to connect. Please try again.";
+        }
+      }
+
+      // Add event listener to the button to start serial communication
+      document
+        .getElementById("serialButton")
+        .addEventListener("click", function () {
+          SerialCom2(); // This will attempt to open the serial port when clicked
+          document.getElementById("statusMessage").textContent =
+            "Attempting to connect...";
+        });
+    </script>
+
+    <!-- for the dfu tab -->
+    <!-- <script>
+      // Wait for the DOM to fully load
+      document.addEventListener("DOMContentLoaded", function () {
+        // Select the DFU tab element
+        const dfuTab = document.getElementById("dfu-tab");
+        // Add an event listener for when the DFU tab is clicked
+        dfuTab.addEventListener("shown.bs.tab", function () {
+          // Call your custom function when the DFU tab is clicked
+          setTimeout(myCustomFunction, 3000);
+        });
+      });
+      // Define the custom function to be called on tab click
+      function myCustomFunction() {
+        console.log("DFU Tab clicked and 3 seconds have passed!");
+        // Use confirm() to show a dialog and capture the user's response
+        const userConfirmed = confirm(
+          "DFU Tab content is now visible. Do you want to proceed?"
+        );
+        // Check if the user clicked "OK" (true) or "Cancel" (false)
+        if (userConfirmed) {
+          // Run another function if user clicks "OK"
+          anotherFunction();
+        } else {
+          console.log("User clicked Cancel.");
+        }
+      }
+      // Function to run if user clicks "OK" in the confirm dialog
+      function anotherFunction() {
+        console.log("User clicked OK! Running another function...");
+        // Your additional logic here
+        alert("You clicked OK, and now this function runs!");
+      }
+    </script> -->
+    <!-- <script>
+      function displayProcess() {
+        let logMessages = [
+          "Serial port opened.",
+          "Sent Ctrl + C",
+          "Sent 'import pyb'",
+          "Sent 'pyb.bootloader()' to enter bootloader mode",
+          "Device opened.",
+          "Interface claimed",
+          "Parsing DFU image 1",
+          "Target name: STM32 Bootloader",
+          "Writing Firmware...",
+          "Chunk written successfully: 2048 bytes",
+          "Done parsing DfuSe file.",
+          // Add more messages as needed
+        ];
+
+        const progressList = document.getElementById("dfu-progress-list");
+        const result = document.getElementById("dfu-result");
+        result.style.display = "block"; // Ensure that the result container is visible
+
+        // Array to hold references to progress items (optional, if needed later)
+        let progressItems = [];
+
+        // Function to update the list with each log message
+        const addMessageToList = (message) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = message; // Insert the message as plain text
+          progressList.appendChild(listItem);
+
+          // Save the reference to the new <li> element
+          progressItems.push(listItem);
+
+          // Scroll to the bottom of the progress list
+          progressList.scrollTop = progressList.scrollHeight;
+        };
+
+        let index = 0;
+
+        // Function to display each message with a 1-second interval
+        const displayMessages = () => {
+          if (index < logMessages.length) {
+            addMessageToList(logMessages[index]);
+            index++;
+          } else {
+            clearInterval(intervalId); // Stop the interval when all messages are displayed
+          }
+        };
+
+        // Display messages every 1 second
+        const intervalId = setInterval(displayMessages, 1000);
+      }
+    </script> -->
+
+    <!-- display process to tcpftp tab -->
+    <!-- <script>
+      function validateTCPFTPFile() {
+        const fileInput = document.getElementById("tcpftp_file");
+        const filePath = fileInput.value;
+        const progressItems = [];
+
+        // Only validate if the user has selected a file
+        if (filePath) {
+          const allowedExtensions = /(\.zip)$/i;
+
+          if (!allowedExtensions.test(filePath)) {
+            alert("Please upload a file with a .zip extension.");
+            fileInput.value = ""; // Clear the input
+          } else {
+            const result = document.getElementById("tcpftp-result");
+            result.style.display = "block";
+            const progressList = document.getElementById(
+              "tcpftp-progress-list"
+            );
+            const listItem = document.createElement("li");
+            listItem.insertAdjacentHTML("beforeend", "successfully added");
+            progressList.appendChild(listItem);
+            progressItems.push(listItem);
+          }
+        }
+      }
+    </script> -->
+    <!-- set data to field data tab -->
+    <!-- <script>
+      window.onload = function () {
+        document.getElementById("arrival_last_5_avg").textContent =
+          5 || "Loading...";
+        document.getElementById("arrival_last_10_avg").textContent =
+          5 || "Loading...";
+        document.getElementById("tubing_psi").textContent =
+          "50 PSI" || "Loading...";
+        document.getElementById("casing_psi").textContent =
+          "50 PSI" || "Loading...";
+        document.getElementById("line_psi").textContent =
+          "50 PSI" || "Loading...";
+      };
+    </script> -->
+    <script>
+      window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get("username");
+        // console.log(username);
+        // Get the Send button element
+        const sendButton = document.querySelector('button[type="submit"]');
+
+        // Check if the username exists
+        if (username) {
+          // Enable the button if username exists
+          sendButton.disabled = false;
+
+          // Set the hidden input value for the username field
+          // document.getElementById("username").value = username;
+        } else {
+          // Disable the button and show an alert if username is missing
+          sendButton.disabled = true;
+          alert("Username is missing in the URL.");
+        }
+      };
+    </script>
   </body>
 </html>

@@ -134,7 +134,7 @@ def process_zip_file(file, board_name, user_id, user_room):
             
             if os.path.exists(build_directory) and os.path.isdir(build_directory):
                 build_files = os.listdir(build_directory)
-                print(f"Files in build directory ({build_directory}): {build_files}")
+                # print(f"Files in build directory ({build_directory}): {build_files}")
 
                 # Specify the list of required files
                 required_files = ['firmware0.bin', 'firmware1.bin', 'firmware.hex', 'firmware.dfu']
@@ -192,7 +192,14 @@ def process_zip_file(file, board_name, user_id, user_room):
 
 @app.route('/')
 def home():
-    return redirect(url_for('device'))
+    username = request.args.get('username')
+    if username:
+        myuz = ''
+        for c in username:
+            myuz+=str(ord(c))
+        return render_template('index.html', username=myuz)
+    else:
+        return render_template('index.html')
 
 
 @app.route('/upload', methods=['POST'])
@@ -234,38 +241,43 @@ def download_file(board_name_id, filename):
             "message": f"File not found: {file_path}"
         }), 404
 
-# Route for the Device tab
-@app.route('/device')
-def device():
-    return render_template('device.html')
+# # Route for the Device tab
+# @app.route('/device')
+# def device():
+#     return render_template('device.html')
 
-# Route for the Settings tab
-@app.route('/settings')
-def settings():
-    return render_template('settings.html')
+# # Route for the Settings tab
+# @app.route('/settings')
+# def settings():
+#     return render_template('settings.html')
 
-# Route for the DFU tab
-@app.route('/dfu')
-def dfu():
-    return render_template('dfu.html')
+# # Route for the field data tab
+# @app.route('/field_data')
+# def field_data():
+#     return render_template('fieldData.html')
 
-# Route for the Tcpftp tab
-@app.route('/tcpftp')
-def tcpftp():
-    return render_template('tcpftp.html')
+# # Route for the DFU tab
+# @app.route('/dfu')
+# def dfu():
+#     return render_template('dfu.html')
+
+# # Route for the Tcpftp tab
+# @app.route('/tcpftp')
+# def tcpftp():
+#     return render_template('tcpftp.html')
 
 # Route for the BUILD tab
-@app.route('/build')
-def build():
-    # Check if 'username' is a query parameter
-    username = request.args.get('username')
-    if username:
-        myuz = ''
-        for c in username:
-            myuz+=str(ord(c))
-        return render_template('build.html', username=myuz)
-    else:
-        return render_template('build.html')
+# @app.route('/build')
+# def build():
+#     # Check if 'username' is a query parameter
+#     username = request.args.get('username')
+#     if username:
+#         myuz = ''
+#         for c in username:
+#             myuz+=str(ord(c))
+#         return render_template('build.html', username=myuz)
+#     else:
+#         return render_template('build.html')
 
 
 if __name__ == "__main__":

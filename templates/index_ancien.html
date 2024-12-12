@@ -85,6 +85,7 @@
         }
       }
     </style>
+
     <title>Pytro AI</title>
   </head>
   <body>
@@ -104,28 +105,28 @@
         <li class="nav-item bg-primary" role="presentation">
           <a
             class="nav-link active"
-            id="device-tab"
+            id="deviceInformation-tab"
             data-bs-toggle="tab"
-            href="#device"
+            href="#deviceInformation"
             role="tab"
-            aria-controls="device"
+            aria-controls="deviceInformation"
             aria-selected="true"
-            >Device</a
+            >Device information</a
           >
         </li>
         <li class="nav-item bg-primary" role="presentation">
           <a
             class="nav-link"
-            id="settings-tab"
+            id="settingsFieldData-tab"
             data-bs-toggle="tab"
-            href="#settings"
+            href="#settingsFieldData"
             role="tab"
-            aria-controls="settings"
+            aria-controls="settingsFieldData"
             aria-selected="false"
-            >Settings</a
+            >Settings & Field data</a
           >
         </li>
-        <li class="nav-item bg-primary" role="presentation">
+        <!-- <li class="nav-item bg-primary" role="presentation">
           <a
             class="nav-link"
             id="dfu-tab"
@@ -148,7 +149,7 @@
             aria-selected="false"
             >TCP FTP</a
           >
-        </li>
+        </li> -->
         <li class="nav-item bg-primary" role="presentation">
           <a
             class="nav-link"
@@ -165,64 +166,87 @@
 
       <!---------------------------------------- Tab content ---------------------------------------->
       <div class="tab-content w-100" id="myTabContent">
-        <!---------------------------------------- Device Tab ---------------------------------------->
+        <!---------------------------------------- Device information Tab ---------------------------------------->
         <div
-          class="tab-pane fade show active"
-          id="device"
+          class="tab-pane"
+          id="deviceInformation"
           role="tabpanel"
-          aria-labelledby="device-tab"
+          aria-labelledby="deviceInformation-tab"
         >
-          <div
-            class="container mt-customize d-flex flex-column justify-content-center align-items-center"
-          >
-            <button id="serialButton" class="btn btn-primary">
-              Connect to Serial Port
-            </button>
-            <p class="mt-3" id="statusMessage">
-              Click the button above to connect to the serial port.
-            </p>
-            <table
-              class="table table-hover table-striped"
-              id="fileTable"
-              style="display: none"
+          <!-- Sub-tabs inside the device Information -->
+          <ul class="nav nav-tabs" id="deviceInformationSubTab" role="tablist">
+            <li class="nav-item bg-primary" role="presentation">
+              <a
+                class="nav-link active"
+                id="device-tab"
+                data-bs-toggle="tab"
+                href="#device"
+                role="tab"
+                aria-controls="device"
+                aria-selected="true"
+              >
+                Device
+              </a>
+            </li>
+            <li class="nav-item bg-primary" role="presentation">
+              <a
+                class="nav-link"
+                id="dfu-tab"
+                data-bs-toggle="tab"
+                href="#dfu"
+                role="tab"
+                aria-controls="dfu"
+                aria-selected="false"
+              >
+                DFU
+              </a>
+            </li>
+            <li class="nav-item bg-primary" role="presentation">
+              <a
+                class="nav-link"
+                id="tcpftp-tab"
+                data-bs-toggle="tab"
+                href="#tcpftp"
+                role="tab"
+                aria-controls="tcpftp"
+                aria-selected="false"
+              >
+                TCP FTP
+              </a>
+            </li>
+          </ul>
+
+          <!-- Content for sub-tabs inside the settings tab -->
+          <div class="tab-content mt-2">
+            <div
+              class="tab-pane fade show active"
+              id="device"
+              role="tabpanel"
+              aria-labelledby="device-tab"
             >
-              <thead>
-                <tr>
-                  <th>File Type</th>
-                  <th>File Name</th>
-                  <th>Size</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>.....</td>
-                  <td>.....</td>
-                  <td>.....</td>
-                </tr>
-                <tr>
-                  <td>.....</td>
-                  <td>.....</td>
-                  <td>.....</td>
-                </tr>
-                <tr>
-                  <td>.....</td>
-                  <td>.....</td>
-                  <td>.....</td>
-                </tr>
-              </tbody>
-            </table>
+              <!-- Content for device -->
+              <h5 class="bg-dark text-light p-2">Controller configuration</h5>
+            </div>
+            <div
+              class="tab-pane fade"
+              id="dfu"
+              role="tabpanel"
+              aria-labelledby="dfu-tab"
+            >
+              <!-- Content for DFU -->
+              <h5 class="bg-dark text-light p-2">DFU</h5>
+            </div>
           </div>
         </div>
-
         <!---------------------------------------- Settings Tab ---------------------------------------->
         <div
           class="tab-pane fade"
-          id="settings"
+          id="settingsFieldData"
           role="tabpanel"
-          aria-labelledby="settings-tab"
+          aria-labelledby="settingsFieldData-tab"
         >
           <!-- Sub-tabs inside the settings tab -->
-          <ul class="nav nav-tabs" id="settingsSubTab" role="tablist">
+          <ul class="nav nav-tabs" id="settingsFieldDataSubTab" role="tablist">
             <li class="nav-item bg-primary" role="presentation">
               <a
                 class="nav-link active"
@@ -771,28 +795,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!---------------------------------------- DFU Tab ---------------------------------------->
-        <div
-          class="tab-pane fade"
-          id="dfu"
-          role="tabpanel"
-          aria-labelledby="dfu-tab"
-        >
-          <h4>DFU Tab Content</h4>
-          <p>This is the content for the DFU tab.</p>
-        </div>
-
-        <!---------------------------------------- TCP FTP Tab ---------------------------------------->
-        <div
-          class="tab-pane fade"
-          id="tcpftp"
-          role="tabpanel"
-          aria-labelledby="tcpftp-tab"
-        >
-          <h4>TCP FTP Tab Content</h4>
-          <p>This is the content for the TCP FTP tab.</p>
         </div>
 
         <!---------------------------------------- Build Tab ---------------------------------------->
