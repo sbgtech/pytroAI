@@ -4,29 +4,24 @@ const DFU_DNLOAD = 0x01;
 const DFU_GETSTATUS = 0x03;
 const DFU_CLRSTATUS = 0x04;
 const DFU_ABORT = 0x06;
+let port; // Global reference to the serial port
+let writer; // Global reference to the writable stream
+let reader; // Global reference to the readable stream
 
 let progressDFUItems = [];
 
 async function resetDFUProcess() {
-  // Clear the progress list
   const progressList = document.getElementById("dfu-progress-list");
   progressList.innerHTML = ""; // Remove all existing list items
-
-  // Hide the loading spinner at first (until upload starts)
-  document.getElementById("dfu-process-loading").style.display = "none";
-
-  // Show the progress container again when a new upload starts
-  document.getElementById("dfu-progress-container").style.display = "block";
-  document.getElementById("dfu-result").style.display = "none";
+  // document.getElementById("dfu-container").style.display = "none";
 }
 
-async function LoadDFUProcess(msg, className) {
+async function DisplayDFUProcess(msg, className) {
   const progressList = document.getElementById("dfu-progress-list");
-  const result_dfu = document.getElementById("dfu-result");
-  document.getElementById("dfu-process-loading").style.display = "block";
-  result_dfu.style.display = "block";
+  progressList.style.listStyleType = "none";
   const listItem = document.createElement("li");
   listItem.textContent = msg;
+  listItem.style.fontWeight = "bold";
   listItem.classList.add("alert");
   listItem.classList.add(className);
   progressList.appendChild(listItem);
@@ -47,45 +42,188 @@ async function sleep(ms) {
 async function SerialCom() {
   try {
     await resetDFUProcess();
-    const port = await navigator.serial.requestPort();
-    document.getElementById("dfu-bootloader-loading").style.display = "block";
-
+    if (reader) {
+      reader.releaseLock();
+    }
+    if (port) {
+      await port.close();
+      port = null;
+    }
+    port = await navigator.serial.requestPort();
+    document.getElementById("dfu-container").style.display = "block";
+    document.getElementById("dfu-loading").style.display = "block";
     // Open the serial port with the desired settings
     await port.open({ baudRate: 9600 });
-    console.log("Serial port opened:", port.getInfo());
-
+    console.log("Serial port opened:", port);
+    await DisplayDFUProcess("Serial port opened", "alert-info");
     const encoder = new TextEncoder();
-    const writer = port.writable.getWriter();
+    writer = port.writable.getWriter();
 
     //Send Ctrl + C to stop any running code
     const ctrlC = encoder.encode("\x03"); // ASCII for Ctrl + C
     await writer.write(ctrlC);
     console.log("Sent Ctrl + C");
+    await waitForPrompt(port);
 
     //Send "import pyb" command
     const importPyb = encoder.encode("import pyb\r\n");
     await writer.write(importPyb);
     console.log("Sent 'import pyb'");
+    await waitForPrompt(port);
 
     //Send "pyb.bootloader()" command
     const enterBootloader = encoder.encode("pyb.bootloader()\r\n");
     await writer.write(enterBootloader);
     console.log("Sent 'pyb.bootloader()' to enter bootloader mode");
+    await waitForPrompt(port);
 
     // Close the writer after sending commands
     writer.releaseLock();
-
+    await port.close();
+    port = null;
     // Wait for 3 seconds before enabling the DFU Process button
     // const dfuButton = document.getElementById("dfuProcessButton");
-    setTimeout(() => {
-      document.getElementById("dfu-bootloader-loading").style.display = "none";
-      // dfuButton.disabled = false;
-      console.log("DFU Process button enabled");
+    setTimeout(async () => {
+      document.getElementById("dfu-loading").style.display = "none";
+      console.log("DFU mode enabled. You may proceed to the next step");
+      await DisplayDFUProcess(
+        "DFU mode enabled. You may proceed to the next step.",
+        "alert-success"
+      );
     }, 3000);
+  } catch (err) {
+    // await resetDFUProcess();
+    await DisplayDFUProcess(
+      "Failed to communicate with the serial port",
+      "alert-danger"
+    );
+  }
+}
+
+async function SerialMonitor() {
+  try {
+    // Request access to the serial port
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    console.log("Serial port opened:", port.getInfo());
+
+    const textArea = document.getElementById("serial-output");
+    if (!textArea) {
+      // throw new Error("Element with ID 'serial-output' not found");
+      console.log("first");
+    }
+    document.getElementById("connectToSerialPortContainer").style.display =
+      "none";
+    document.getElementById("deviceInfoContainer").style.display = "flex";
+    // Function to display incoming data
+    const appendToTextArea = (data) => {
+      textArea.textContent += data;
+      textArea.scrollTop = textArea.scrollHeight; // Auto-scroll to the bottom
+    };
+    await StopScript();
+    // Set up a reader to continuously read from the serial port
+    const decoder = new TextDecoder();
+    reader = port.readable.getReader();
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Reader has been closed
+          break;
+        }
+        if (value) {
+          appendToTextArea(decoder.decode(value));
+        }
+      }
+    } catch (err) {
+      console.error("Error while reading from the serial port:", err);
+    } finally {
+      reader.releaseLock();
+    }
   } catch (err) {
     console.error("Failed to communicate with the serial port:", err);
   }
 }
+
+async function SerialWrite(cmd) {
+  try {
+    writer = port.writable.getWriter();
+    const encoder = new TextEncoder();
+    const command = encoder.encode(cmd); // ASCII for command
+    await writer.write(command);
+    writer.releaseLock();
+  } catch (err) {
+    console.error(`Failed to send ${cmd}:`, err);
+  }
+}
+
+async function RunScript() {
+  try {
+    SerialWrite("\x04");
+    const inputField = document.getElementById("serial-input");
+    inputField.disabled = true;
+    inputField.placeholder = "Stop the run to input your command";
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function StopScript() {
+  try {
+    SerialWrite("\x03");
+    const inputField = document.getElementById("serial-input");
+    inputField.disabled = false;
+    inputField.placeholder = "Input your commands here...";
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function SendSerialInput(event) {
+  if (event.key === "Enter") {
+    try {
+      const inputField = document.getElementById("serial-input");
+      if (!inputField) {
+        throw new Error("Element with ID 'serial-input' not found");
+      }
+      const command = inputField.value.trim(); // Get the trimmed input value
+      if (!command) {
+        console.warn("Input is empty. Nothing to send.");
+        return;
+      }
+      if (!port || !port.writable) {
+        console.error("Serial port is not open for writing.");
+        return;
+      }
+      await SerialWrite(command + "\r\n");
+      inputField.value = ""; // Clear the input field after sending
+    } catch (err) {
+      console.error("Failed to send user input:", err);
+    }
+  }
+}
+
+async function waitForPrompt(port) {
+  const decoder = new TextDecoder();
+  reader = port.readable.getReader();
+  let response = "";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      response += decoder.decode(value);
+      if (response.includes(">>>")) {
+        reader.releaseLock();
+        break;
+      } // Wait for REPL prompt
+    }
+    console.log("Received prompt:", response);
+  } catch (err) {
+    console.error(`Error while waiting for prompt :`, err);
+  }
+}
+
 async function connectWithUSB() {
   try {
     await resetDFUProcess();
@@ -129,29 +267,29 @@ async function connectWithUSB() {
 async function DFU(file, device) {
   let flag = await Mass_Erase(device);
   if (flag == true) {
-    await LoadDFUProcess("Mass Erase Successful ✅", "alert-success");
+    await DisplayDFUProcess("Mass Erase Successful ✅", "alert-info");
   } else {
     alert("Error occurred during Mass Erase");
-    document.getElementById("dfu-process-loading").style.display = "none";
+    document.getElementById("dfu-loading").style.display = "none";
     await resetDFUProcess();
     return;
   }
   flag = await parseDfuFile(file, device);
   if (flag == true) {
-    await LoadDFUProcess("Firmware updated successfully ✅");
+    await DisplayDFUProcess("Firmware updated successfully ✅", "alert-info");
   } else {
     alert("Error occurred during Firmware update");
-    document.getElementById("dfu-process-loading").style.display = "none";
+    document.getElementById("dfu-loading").style.display = "none";
     await resetDFUProcess();
     return;
   }
   flag = await Leave_DFU(device);
   if (flag == true) {
-    await LoadDFUProcess("Device ready for usage ✅");
-    document.getElementById("dfu-process-loading").style.display = "none";
+    await DisplayDFUProcess("Device ready for usage ✅", "alert-success");
+    document.getElementById("dfu-loading").style.display = "none";
   } else {
     alert("Error occurred during Restart");
-    document.getElementById("dfu-process-loading").style.display = "none";
+    document.getElementById("dfu-loading").style.display = "none";
     await resetDFUProcess();
     return;
   }
@@ -338,7 +476,6 @@ async function setAddressPointer(device, address) {
 // Function to perform Mass Erase
 async function Mass_Erase(device) {
   try {
-    await LoadDFUProcess("Mass Erase in progress ...");
     // Ensure device is in dfuIDLE state before proceeding
     const isIdle = await handleFaults(device);
     if (isIdle) {
@@ -382,7 +519,12 @@ async function Mass_Erase(device) {
     // Wait for the mass erase to complete (14 seconds)
     for (let i = 0; i < 14; i++) {
       console.log(`Erasing... (${i + 1}/14 seconds elapsed)`);
+      await DisplayDFUProcess(
+        `Mass Erase in progress ... ${i}/14`,
+        "alert-info"
+      );
       await sleep(1000); // Wait for 1 second per iteration
+      resetDFUProcess();
     }
 
     // Ensure device is back in dfuIDLE state after erasing
@@ -463,7 +605,7 @@ async function parseDfuFile(file, device) {
   // Number of targets
   const bTargets = dfuPrefix[10];
   console.log(`File contains ${bTargets} DFU images`);
-  await LoadDFUProcess("Parsing firmware file...");
+  await DisplayDFUProcess("Parsing firmware file...", "alert-info");
 
   for (let image = 1; image <= bTargets; image++) {
     console.log(`Parsing DFU image ${image}`);
@@ -490,7 +632,7 @@ async function parseDfuFile(file, device) {
     const dwNbElements = new DataView(targetPrefix.buffer).getUint32(270, true);
     const totalSize = new DataView(targetPrefix.buffer).getUint32(266, true);
     console.log(`(${dwNbElements} elements, total size = ${totalSize})`);
-    await LoadDFUProcess("Updating firmware...");
+    await DisplayDFUProcess("Updating firmware...", "alert-info");
     for (let element = 1; element <= dwNbElements; element++) {
       // Parse element header (8 bytes)
       const elementHeader = data.slice(offset, offset + 8);

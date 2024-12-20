@@ -137,41 +137,42 @@ def process_zip_file(file, board_name, user_id, user_room):
                 # print(f"Files in build directory ({build_directory}): {build_files}")
 
                 # Specify the list of required files
-                required_files = ['firmware0.bin', 'firmware1.bin', 'firmware.hex', 'firmware.dfu']
+                # required_files = ['firmware0.bin', 'firmware1.bin', 'firmware.hex', 'firmware.dfu']
+                required_files = ['firmware.hex', 'firmware.dfu']
                 selected_files = [file for file in build_files if file in required_files]
 
                 print(f"Selected files for ZIP: {selected_files}")
 
                 if selected_files:
-                    zip_file_path = os.path.join(build_directory, 'selected_files.zip')
-                    socketio.emit('progress', {'message': 'Creating a ZIP file of selected build files... <i class="fa fa-spinner fa-spin"></i>'}, room=user_room)
+                    # zip_file_path = os.path.join(build_directory, 'selected_files.zip')
+                    socketio.emit('progress', {'message': 'Selected build files (HEX and DFU) found... <i class="fa fa-spinner fa-spin"></i>'}, room=user_room)
                     
-                    with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                        for file_name in selected_files:
-                            file_path = os.path.join(build_directory, file_name)
+                    # with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    #     for file_name in selected_files:
+                    #         file_path = os.path.join(build_directory, file_name)
 
-                            if os.path.isfile(file_path):
-                                # Debugging: Log file size before zipping
-                                original_size = os.path.getsize(file_path)
-                                print(f"Adding file to ZIP: {file_name}, Size: {original_size} bytes")
+                    #         if os.path.isfile(file_path):
+                    #             # Debugging: Log file size before zipping
+                    #             original_size = os.path.getsize(file_path)
+                    #             print(f"Adding file to ZIP: {file_name}, Size: {original_size} bytes")
                                 
-                                # Ensure the file is fully written and not locked
-                                with open(file_path, 'rb') as f:
-                                    file_content = f.read()
-                                    zip_file.writestr(file_name, file_content)
+                    #             # Ensure the file is fully written and not locked
+                    #             with open(file_path, 'rb') as f:
+                    #                 file_content = f.read()
+                    #                 zip_file.writestr(file_name, file_content)
 
-                                # Debugging: Compare size after zipping
-                                zipped_size = len(file_content)
-                                print(f"Zipped file: {file_name}, Size: {zipped_size} bytes")
+                    #             # Debugging: Compare size after zipping
+                    #             zipped_size = len(file_content)
+                    #             print(f"Zipped file: {file_name}, Size: {zipped_size} bytes")
                                 
-                                socketio.emit('progress', {'message': f'Successfully added {file_name} to the ZIP file <i class="fa fa-check-circle"></i>'}, room=user_room)
+                    #             socketio.emit('progress', {'message': f'Successfully added {file_name} to the ZIP file <i class="fa fa-check-circle"></i>'}, room=user_room)
 
-                    print("Selected build files successfully packaged into ZIP.")
-                    socketio.emit('progress', {'message': 'Selected build files successfully packaged into ZIP <i class="fa fa-check-circle"></i>'}, room=user_room)
-
+                    # print("Selected build files successfully packaged into ZIP.")
+                    socketio.emit('progress', {'message': 'Selected build files successfully (HEX and DFU) <i class="fa fa-check-circle"></i>'}, room=user_room)
                     return jsonify({
                         "status": "success",
-                        "zip_file": f"/download/{board_name_id}/{os.path.basename(zip_file_path)}"
+                        "files": selected_files,
+                        # "zip_file": f"/download/{board_name_id}/{os.path.basename(zip_file_path)}"
                     }), 200
                 else:
                     return jsonify({

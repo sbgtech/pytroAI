@@ -1,9 +1,16 @@
 /* Style for the loading spinner in the build page */
-#dfu-bootloader-loading {
+/* #dfu-bootloader-loading {
   display: none;
   text-align: center;
+} */
+#serial-input::placeholder {
+  color: rgb(185, 185, 185); /* Set the placeholder text color to red */
+  font-family: "Courier New", monospace;
 }
-#dfu-process-loading {
+#dfu-container {
+  display: none;
+}
+#dfu-loading {
   display: none;
   text-align: center;
 }
@@ -59,7 +66,7 @@
   color: #0b9b0b;
 }
 .mt-customize {
-  margin-top: 6em;
+  margin-top: 3em;
 }
 
 /* Make tabs full width */
