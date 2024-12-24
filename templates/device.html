@@ -1,77 +1,459 @@
-{% extends 'index.html' %} {% block content %}
-<!---------------------------------------- Device Tab ---------------------------------------->
-<div>
-  <div
-    class="container mt-customize d-flex flex-column justify-content-center align-items-center"
-  >
-    <button id="serialButton" class="btn btn-primary">
-      Connect to Serial Port
-    </button>
-    <p class="mt-3" id="statusMessage">
-      Click the button above to connect to the serial port.
-    </p>
-    <table
-      class="table table-hover table-striped"
-      id="fileTable"
-      style="display: none"
-    >
-      <thead>
-        <tr>
-          <th>File Type</th>
-          <th>File Name</th>
-          <th>Size</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>.....</td>
-          <td>.....</td>
-          <td>.....</td>
-        </tr>
-        <tr>
-          <td>.....</td>
-          <td>.....</td>
-          <td>.....</td>
-        </tr>
-        <tr>
-          <td>.....</td>
-          <td>.....</td>
-          <td>.....</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navbar Example</title>
+    <!-- Link to Bootstrap 5.3.2 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="p-2 d-flex justify-content-between">
+        <h1 class="fw-bold">PYTRO AI</h1>
+        <img
+          src="/static/images/Pytronix_Logo.png"
+          alt="Pytronix Logo"
+          width="100px"
+          height="47px"
+        />
+      </div>
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Device information
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li>
+                    <a
+                      class="dropdown-item nav-link show active"
+                      id="device-tab"
+                      data-bs-toggle="tab"
+                      href="#device"
+                      role="tab"
+                      aria-controls="device"
+                      aria-selected="true"
+                      >Device</a
+                    >
+                  </li>
+                  <li><a class="dropdown-item" href="#">DFU</a></li>
+                  <li>
+                    <a class="dropdown-item" href="#">TCP FTP</a>
+                  </li>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Settings & Field data
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="#">Settings</a></li>
+                  <li><a class="dropdown-item" href="#">Field Data</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      <div
+        class="tab-pane fade show active"
+        id="device"
+        role="tabpanel"
+        aria-labelledby="device-tab"
+      >
+        <div>
+          <div class="container text-center" id="connectToSerialPortContainer">
+            <button onclick="SerialMonitor()" class="btn btn-primary">
+              Connect to Serial Port
+            </button>
+          </div>
+          <div
+            class="row w-100 py-2"
+            style="max-height: 99vh; display: none"
+            id="deviceInfoContainer"
+          >
+            <div class="col-md-6" style="height: 100%">
+              <div class="col-md-12 mb-4">
+                <div class="card border border-primary">
+                  <div class="card-header">File system</div>
+                  <div>
+                    <table
+                      class="table table-bordered table-hover table-striped text-center mb-1"
+                    >
+                      <thead>
+                        <tr>
+                          <th>Icon</th>
+                          <th>File</th>
+                          <th>Type</th>
+                          <th>Size</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><i class="fa fa-user"></i></td>
+                          <td>config.py</td>
+                          <td>python</td>
+                          <td>145</td>
+                        </tr>
+                        <tr>
+                          <td><i class="fa fa-user"></i></td>
+                          <td>config.py</td>
+                          <td>python</td>
+                          <td>145</td>
+                        </tr>
+                        <tr>
+                          <td><i class="fa fa-user"></i></td>
+                          <td>config.py</td>
+                          <td>python</td>
+                          <td>145</td>
+                        </tr>
+                        <tr>
+                          <td><i class="fa fa-user"></i></td>
+                          <td>config.py</td>
+                          <td>python</td>
+                          <td>145</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12 mb-4">
+                <div class="card border border-primary">
+                  <div class="card-header">Config form</div>
+                  <form action="">
+                    <div class="row p-2">
+                      <div class="col-md-4">
+                        <label for="PYTRO_APN" class="form-label"
+                          >PYTRO_APN</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="PYTRO_APN"
+                          value="teal"
+                        />
+                      </div>
+                      <div class="col-md-4">
+                        <label for="PYTRO_IP_ADDRESS" class="form-label"
+                          >PYTRO_IP_ADDRESS</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="PYTRO_IP_ADDRESS"
+                          value="192.168.10.1"
+                        />
+                      </div>
+                      <div class="col-md-4">
+                        <label for="PYTRO_SUBNET_MASK" class="form-label"
+                          >PYTRO_SUBNET_MASK</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="PYTRO_SUBNET_MASK"
+                          value="255.255.255.0"
+                        />
+                      </div>
+                    </div>
+                    <div class="row p-2">
+                      <div class="col-md-6">
+                        <label for="PYTRO_GATEWAY" class="form-label"
+                          >PYTRO_GATEWAY</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="PYTRO_GATEWAY"
+                          value="192.168.10.1"
+                        />
+                      </div>
+                      <div class="col-md-6">
+                        <label for="PYTRO_DNS" class="form-label"
+                          >PYTRO_DNS</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="PYTRO_DNS"
+                          value="8.8.8.8"
+                        />
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label class="form-check-label" for="PYTRO_CELL"
+                          >PYTRO_CELL</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_CELL"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch flex align-items-center"
+                        style="padding-left: 4em"
+                      >
+                        <label class="form-check-label" for="PYTRO_BLE"
+                          >PYTRO_BLE</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_BLE"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label class="form-check-label" for="PYTRO_TCP"
+                          >PYTRO_TCP</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_TCP"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label class="form-check-label" for="PYTRO_MESH"
+                          >PYTRO_MESH</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_MESH"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-12 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label class="form-check-label" for="PYTRO_P2P"
+                          >PYTRO_P2P</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_P2P"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label
+                          class="form-check-label"
+                          for="PYTRO_MBRTU_RS485_SLAVE"
+                          >PYTRO_MBRTU_RS485_SLAVE</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_MBRTU_RS485_SLAVE"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label
+                          class="form-check-label"
+                          for="PYTRO_MBRTU_RS232_SLAVE"
+                          >PYTRO_MBRTU_RS232_SLAVE</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_MBRTU_RS232_SLAVE"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label
+                          class="form-check-label"
+                          for="PYTRO_MBRTU_RS485_MASTER"
+                          >PYTRO_MBRTU_RS485_MASTER</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_MBRTU_RS485_MASTER"
+                          checked
+                        />
+                      </div>
+                      <div
+                        class="col-md-6 form-check form-switch"
+                        style="padding-left: 4em"
+                      >
+                        <label
+                          class="form-check-label"
+                          for="PYTRO_MBRTU_RS232_MASTER"
+                          >PYTRO_MBRTU_RS232_MASTER</label
+                        >
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="PYTRO_MBRTU_RS232_MASTER"
+                          checked
+                        />
+                      </div>
+                    </div>
+                    <div class="row p-2">
+                      <div class="col-md-12 d-flex justify-content-end">
+                        <button class="btn btn-primary">Apply</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
 
-<!-- for the device tab -->
-<script>
-  // Function for handling serial communication
-  async function SerialCom2() {
-    try {
-      // Request the serial port
-      const port = await navigator.serial.requestPort();
-      // Open the serial port with the desired settings
-      await port.open({ baudRate: 9600 });
-      console.log("Serial port opened:", port.getInfo());
-      document.getElementById("serialButton").style.display = "none";
-      document.getElementById("statusMessage").textContent =
-        "Successfully connected to the serial port!";
-      document.getElementById("fileTable").style.display = "block";
-    } catch (err) {
-      console.error("Failed to communicate with the serial port:", err);
-      document.getElementById("statusMessage").textContent =
-        "Failed to connect. Please try again.";
-    }
-  }
+            <div class="col-md-6" style="max-height: 100%">
+              <div class="card" style="height: 672px; border-radius: 8px">
+                <div
+                  class="card-header p-2 d-flex justify-content-between align-items-center"
+                  style="background-color: #2c2f38; color: white"
+                >
+                  <span style="font-size: 16px">Terminal</span>
+                  <div class="d-flex gap-2">
+                    <button
+                      id="RunButton"
+                      onclick="RunScript()"
+                      class="btn btn-light"
+                    >
+                      Run <i class="fa fa-play text-success"></i>
+                    </button>
+                    <button
+                      id="StopButton"
+                      onclick="StopScript()"
+                      class="btn btn-light"
+                    >
+                      Stop <i class="fa fa-stop text-danger"></i>
+                    </button>
+                    <button
+                      id="StopButton"
+                      onclick="clearTerminal()"
+                      class="btn btn-light"
+                    >
+                      Clear
+                      <i class="fa fa-eraser" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div style="font-size: 12px">
+                    <span
+                      style="
+                        margin-right: 5px;
+                        background-color: #ff3b30;
+                        border-radius: 50%;
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                      "
+                    ></span>
+                    <span
+                      style="
+                        margin-right: 5px;
+                        background-color: #ffcc00;
+                        border-radius: 50%;
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                      "
+                    ></span>
+                    <span
+                      style="
+                        background-color: #4cd964;
+                        border-radius: 50%;
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                      "
+                    ></span>
+                  </div>
+                </div>
+                <div
+                  class="card-body"
+                  style="
+                    background-color: black;
+                    color: white;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    height: calc(100% - 40px);
+                    padding: 1.5px;
+                  "
+                >
+                  <textarea
+                    id="serial-output"
+                    style="background-color: black; border: none"
+                    class="w-100 h-100 text-light"
+                    readonly
+                  >
+                  </textarea>
+                </div>
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    id="serial-input"
+                    class="form-control text-light"
+                    style="
+                      background-color: black;
+                      border-radius: 0px;
+                      border-bottom-left-radius: 7px;
+                      border-bottom-right-radius: 7px;
+                      font-family: 'Courier New', monospace;
+                    "
+                    onkeydown="SendSerialInput(event)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  // Add event listener to the button to start serial communication
-  document
-    .getElementById("serialButton")
-    .addEventListener("click", function () {
-      SerialCom2(); // This will attempt to open the serial port when clicked
-      document.getElementById("statusMessage").textContent =
-        "Attempting to connect...";
-    });
-</script>
-
-{% endblock %}
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+  </body>
+</html>

@@ -90,9 +90,9 @@ def process_zip_file(file, board_name, user_id, user_room):
         file_list = zip_ref.namelist()
         non_py_files = [f for f in file_list if not f.endswith('.py')]
         if non_py_files:
-            socketio.emit('progress', {
-                'message': f"Error: The following non-.py files were found: {', '.join(non_py_files)}"
-            }, room=user_room)
+            # socketio.emit('progress', {
+            #     'message': f"Error: The following non-.py files were found: {', '.join(non_py_files)}"
+            # }, room=user_room)
             return jsonify({"status": "error", "message": f"Error: The following non-.py files were found: {', '.join(non_py_files)}"}), 400
         print("Started processing ZIP file...")
         socketio.emit('progress', {'message': 'Started processing ZIP file... <i class="fa fa-spinner fa-spin"></i>'}, room=user_room)
@@ -171,8 +171,9 @@ def process_zip_file(file, board_name, user_id, user_room):
                     socketio.emit('progress', {'message': 'Selected build files successfully (HEX and DFU) <i class="fa fa-check-circle"></i>'}, room=user_room)
                     return jsonify({
                         "status": "success",
-                        "files": selected_files,
-                        # "zip_file": f"/download/{board_name_id}/{os.path.basename(zip_file_path)}"
+                        # "files": selected_files,
+                        "hex_file": f"/download/{board_name_id}/{selected_files[0]}",
+                        "dfu_file": f"/download/{board_name_id}/{selected_files[1]}"
                     }), 200
                 else:
                     return jsonify({
@@ -243,9 +244,9 @@ def download_file(board_name_id, filename):
         }), 404
 
 # # Route for the Device tab
-# @app.route('/device')
-# def device():
-#     return render_template('device.html')
+@app.route('/device')
+def device():
+    return render_template('device.html')
 
 # # Route for the Settings tab
 # @app.route('/settings')

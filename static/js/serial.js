@@ -10,6 +10,8 @@ let reader; // Global reference to the readable stream
 
 let progressDFUItems = [];
 
+let selectedDevice = null;
+
 async function resetDFUProcess() {
   const progressList = document.getElementById("dfu-progress-list");
   progressList.innerHTML = ""; // Remove all existing list items
@@ -52,31 +54,29 @@ async function SerialCom() {
     port = await navigator.serial.requestPort();
     document.getElementById("dfu-container").style.display = "block";
     document.getElementById("dfu-loading").style.display = "block";
+    document.getElementById("loadingMessage").textContent =
+      "Set to Bootloader mode, please wait...";
     // Open the serial port with the desired settings
     await port.open({ baudRate: 9600 });
     console.log("Serial port opened:", port);
     await DisplayDFUProcess("Serial port opened", "alert-info");
     const encoder = new TextEncoder();
     writer = port.writable.getWriter();
-
     //Send Ctrl + C to stop any running code
     const ctrlC = encoder.encode("\x03"); // ASCII for Ctrl + C
     await writer.write(ctrlC);
     console.log("Sent Ctrl + C");
     await waitForPrompt(port);
-
     //Send "import pyb" command
     const importPyb = encoder.encode("import pyb\r\n");
     await writer.write(importPyb);
     console.log("Sent 'import pyb'");
     await waitForPrompt(port);
-
     //Send "pyb.bootloader()" command
     const enterBootloader = encoder.encode("pyb.bootloader()\r\n");
     await writer.write(enterBootloader);
     console.log("Sent 'pyb.bootloader()' to enter bootloader mode");
     await waitForPrompt(port);
-
     // Close the writer after sending commands
     writer.releaseLock();
     await port.close();
@@ -86,10 +86,12 @@ async function SerialCom() {
     setTimeout(async () => {
       document.getElementById("dfu-loading").style.display = "none";
       console.log("DFU mode enabled. You may proceed to the next step");
+      await resetDFUProcess();
       await DisplayDFUProcess(
         "DFU mode enabled. You may proceed to the next step.",
         "alert-success"
       );
+      document.getElementById("selectDeviceButton").disabled = false;
     }, 3000);
   } catch (err) {
     // await resetDFUProcess();
@@ -110,16 +112,22 @@ async function SerialMonitor() {
     const textArea = document.getElementById("serial-output");
     if (!textArea) {
       // throw new Error("Element with ID 'serial-output' not found");
-      console.log("first");
+      console.log("Element with ID 'serial-output' not found");
     }
-    document.getElementById("connectToSerialPortContainer").style.display =
-      "none";
+    // document.getElementById("connectToSerialPortContainer").style.display =
+    //   "none";
     document.getElementById("deviceInfoContainer").style.display = "flex";
     // Function to display incoming data
     const appendToTextArea = (data) => {
+      // Check if the text content size exceeds 1MB (1,048,576 bytes)
+      if (new TextEncoder().encode(textArea.textContent).length > 1048576) {
+        console.log("Log size exceeded 1MB. Clearing terminal...");
+        clearTerminal();
+      }
       textArea.textContent += data;
       textArea.scrollTop = textArea.scrollHeight; // Auto-scroll to the bottom
     };
+
     await StopScript();
     // Set up a reader to continuously read from the serial port
     const decoder = new TextDecoder();
@@ -143,6 +151,14 @@ async function SerialMonitor() {
     }
   } catch (err) {
     console.error("Failed to communicate with the serial port:", err);
+  }
+}
+
+// Function to clear the terminal
+function clearTerminal() {
+  const textArea = document.getElementById("serial-output");
+  if (textArea) {
+    textArea.textContent = ""; // Clear the content of the text area
   }
 }
 
@@ -175,6 +191,8 @@ async function StopScript() {
     const inputField = document.getElementById("serial-input");
     inputField.disabled = false;
     inputField.placeholder = "Input your commands here...";
+    const textArea = document.getElementById("serial-output");
+    console.log(new TextEncoder().encode(textArea.textContent).length);
   } catch (err) {
     console.error(err);
   }
@@ -224,41 +242,58 @@ async function waitForPrompt(port) {
   }
 }
 
-async function connectWithUSB() {
+async function selectUSBDevice() {
   try {
+    // Request USB device selection from the user
     await resetDFUProcess();
-
-    // Step 1: Request USB device selection from the user
-    const device = await navigator.usb.requestDevice({ filters: [] });
-
-    // Step 2: Ensure the selected device is the expected one
-    if (device.productName === "STM32  BOOTLOADER") {
-      // Immediately trigger the file dialog
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = ".dfu"; // Specify acceptable file types
-      fileInput.onchange = async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          console.log("Selected file:", file.name);
-          // Proceed with the DFU file processing
-          await DFU(file, device);
-        }
-      };
-
-      // Trigger the file input dialog immediately after device selection
-      fileInput.click();
-
-      // Step 3: Proceed with opening the device, configuration, and claiming the interface
-      await device.open();
-      console.log("Device opened:", device);
-
-      if (device.configuration === null) await device.selectConfiguration(1);
-      await device.claimInterface(0);
-      console.log("Interface claimed");
+    await DisplayDFUProcess("Connecting to device...", "alert-info");
+    selectedDevice = await navigator.usb.requestDevice({ filters: [] });
+    // Ensure the selected device is the expected one
+    if (selectedDevice.productName === "STM32  BOOTLOADER") {
+      console.log("Device selected:", selectedDevice);
+      // Enable the DFU process button
+      document.getElementById("UpgradeFirmwareButton").disabled = false;
+      await resetDFUProcess();
+      await DisplayDFUProcess(
+        "Connected to Device, Ready for Firmware Upgrade ✅",
+        "alert-success"
+      );
     } else {
       console.log("Selected device does not match the desired product name.");
+      selectedDevice = null;
     }
+  } catch (error) {
+    console.error("Error selecting USB device:", error);
+    selectedDevice = null;
+  }
+}
+
+async function startDFUProcess() {
+  try {
+    if (!selectedDevice) {
+      console.error("No USB device selected. Please select a device first.");
+      return;
+    }
+    // Immediately trigger the file dialog
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".dfu"; // Specify acceptable file types
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log("Selected file:", file.name);
+        // Proceed with the DFU file processing
+        await selectedDevice.open();
+        console.log("Device opened:", selectedDevice);
+        if (selectedDevice.configuration === null)
+          await selectedDevice.selectConfiguration(1);
+        await selectedDevice.claimInterface(0);
+        console.log("Interface claimed");
+        await DFU(file, selectedDevice);
+      }
+    };
+    // Trigger the file input dialog
+    fileInput.click();
   } catch (error) {
     console.error("Error during DFU process:", error);
   }
@@ -285,6 +320,7 @@ async function DFU(file, device) {
   }
   flag = await Leave_DFU(device);
   if (flag == true) {
+    await resetDFUProcess();
     await DisplayDFUProcess("Device ready for usage ✅", "alert-success");
     document.getElementById("dfu-loading").style.display = "none";
   } else {
@@ -488,11 +524,9 @@ async function Mass_Erase(device) {
       );
       return false;
     }
-
     // Command for mass erase
     const eraseCmd = new Uint8Array([0x41]);
     console.log("Sending mass erase command...");
-
     // Send DFU_DNLOAD request with wValue = 0 and the mass erase command
     const result = await device.controlTransferOut(
       {
@@ -504,18 +538,18 @@ async function Mass_Erase(device) {
       },
       eraseCmd.buffer
     );
-
     if (result.status !== "ok") {
       throw new Error("Failed to send erase command.");
     }
     console.log("Erase command sent successfully.");
-
     // Check status after initiating the erase command
     const status = await getStatus(device);
     if (!status) {
       throw new Error("Failed to retrieve status after sending erase command.");
     }
-
+    document.getElementById("dfu-loading").style.display = "block";
+    document.getElementById("loadingMessage").textContent =
+      "Updating Firmware, please wait...";
     // Wait for the mass erase to complete (14 seconds)
     for (let i = 0; i < 14; i++) {
       console.log(`Erasing... (${i + 1}/14 seconds elapsed)`);
@@ -526,7 +560,6 @@ async function Mass_Erase(device) {
       await sleep(1000); // Wait for 1 second per iteration
       resetDFUProcess();
     }
-
     // Ensure device is back in dfuIDLE state after erasing
     const eraseSuccess = await handleFaults(device);
     if (eraseSuccess) {

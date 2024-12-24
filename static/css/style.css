@@ -87,7 +87,7 @@
   border: none;
   border-radius: 0;
   padding: 10px 0;
-  font-weight: bold;
+  font-weight: normal;
 }
 .nav-tabs .nav-link:hover {
   background-color: #1c64d1;
@@ -95,12 +95,13 @@
 .nav-tabs .nav-link.active {
   background-color: #034fc0;
   color: white;
+  font-weight: bold;
 }
 .tab-content {
   background: #ffffff;
   /* border: 1px solid #007bff; */
   border-top: none;
-  padding: 16px;
+  padding: 4px;
 }
 
 /* Make tabs responsive */

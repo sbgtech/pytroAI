@@ -17,7 +17,7 @@
     <script src="/static/js/serial.js"></script>
   </head>
   <body>
-    <div class="container-fluid">
+    <div>
       <!---------------------------------------- Welcome message ---------------------------------------->
       <div class="p-2 d-flex justify-content-between">
         <h1 class="fw-bold">PYTRO AI</h1>
@@ -57,7 +57,7 @@
             Settings & Field data
           </a>
         </li>
-        <li class="nav-item" role="presentation">
+        <!-- <li class="nav-item" role="presentation">
           <a
             class="nav-link"
             id="tab3"
@@ -69,7 +69,7 @@
           >
             Build
           </a>
-        </li>
+        </li> -->
       </ul>
 
       <!-- Main Tab Contents -->
@@ -86,11 +86,11 @@
             <li class="nav-item" role="presentation">
               <a
                 class="nav-link show active"
-                id="device-tab"
+                id="tab1-1"
                 data-bs-toggle="tab"
-                href="#device"
+                href="#device-tab"
                 role="tab"
-                aria-controls="device"
+                aria-controls="device-tab"
                 aria-selected="true"
               >
                 Device
@@ -99,24 +99,24 @@
             <li class="nav-item" role="presentation">
               <a
                 class="nav-link"
-                id="dfu-tab"
+                id="tab1-2"
                 data-bs-toggle="tab"
-                href="#dfu"
+                href="#firmware-tab"
                 role="tab"
-                aria-controls="dfu"
+                aria-controls="firmware-tab"
                 aria-selected="false"
               >
-                DFU
+                Firmware
               </a>
             </li>
             <li class="nav-item" role="presentation">
               <a
                 class="nav-link"
-                id="tcpftp-tab"
+                id="tab1-3"
                 data-bs-toggle="tab"
-                href="#tcpftp"
+                href="#tcpftp-tab"
                 role="tab"
-                aria-controls="tcpftp"
+                aria-controls="tcpftp-tab"
                 aria-selected="false"
               >
                 TCP FTP
@@ -125,13 +125,13 @@
           </ul>
 
           <!-- Sub-Tabs Content -->
-          <div class="tab-content mt-3">
+          <div class="tab-content">
             <!----------------------------------- device sub-tab ----------------------------------->
             <div
               class="tab-pane fade show active"
-              id="device"
+              id="device-tab"
               role="tabpanel"
-              aria-labelledby="device-tab"
+              aria-labelledby="tab1-1"
             >
               <div>
                 <div
@@ -195,7 +195,14 @@
                     </div>
                     <div class="col-md-12 mb-4">
                       <div class="card border border-primary">
-                        <div class="card-header">Config form</div>
+                        <div
+                          class="card-header d-flex justify-content-between align-items-center"
+                        >
+                          <span>Config form</span>
+                          <button class="btn btn-light border border-dark">
+                            <i class="fa fa-refresh"></i>
+                          </button>
+                        </div>
                         <form action="">
                           <div class="row p-2">
                             <div class="col-md-4">
@@ -424,37 +431,63 @@
                           >
                             Stop <i class="fa fa-stop text-danger"></i>
                           </button>
+                          <button
+                            id="StopButton"
+                            onclick="clearTerminal()"
+                            class="btn btn-light"
+                          >
+                            Clear
+                            <i class="fa fa-eraser" aria-hidden="true"></i>
+                          </button>
                         </div>
-                        <div style="font-size: 12px">
+                        <div style="font-size: 12px; display: flex">
                           <span
                             style="
                               margin-right: 5px;
-                              background-color: #ff3b30;
+                              background-color: #4cd964;
                               border-radius: 50%;
-                              width: 14px;
-                              height: 14px;
-                              display: inline-block;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
                             "
+                            ><i
+                              class="fa fa-arrows-h text-dark"
+                              aria-hidden="true"
+                            ></i
                           ></span>
                           <span
                             style="
                               margin-right: 5px;
                               background-color: #ffcc00;
                               border-radius: 50%;
-                              width: 14px;
-                              height: 14px;
-                              display: inline-block;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
                             "
+                            ><i
+                              class="fa fa-chevron-right text-dark"
+                              aria-hidden="true"
+                            ></i
                           ></span>
                           <span
                             style="
-                              background-color: #4cd964;
+                              background-color: #ff3b30;
                               border-radius: 50%;
-                              width: 14px;
-                              height: 14px;
-                              display: inline-block;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
                             "
-                          ></span>
+                            ><i
+                              class="fa fa-times text-light"
+                              aria-hidden="true"
+                            ></i>
+                          </span>
                         </div>
                       </div>
                       <div
@@ -496,59 +529,261 @@
                 </div>
               </div>
             </div>
-            <!----------------------------------- DFU sub-tab ----------------------------------->
+            <!----------------------------------- firmware sub-tab ----------------------------------->
             <div
               class="tab-pane fade"
-              id="dfu"
+              id="firmware-tab"
               role="tabpanel"
-              aria-labelledby="dfu-tab"
+              aria-labelledby="tab1-2"
             >
-              <div
-                class="container d-flex flex-column justify-content-center align-items-center"
-              >
-                <div class="row w-100">
-                  <div class="col-md-6 mx-auto">
-                    <div class="card p-4 border border-primary gap-4">
-                      <button class="btn btn-primary" onclick="SerialCom()">
-                        Set to bootloader
-                      </button>
+              <!-- Sub-Tabs for Tab 2 -->
+              <ul class="nav nav-tabs" id="subTabs1-2" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <a
+                    class="nav-link active"
+                    id="tab1-2-1"
+                    data-bs-toggle="tab"
+                    href="#dfu-tab"
+                    role="tab"
+                    aria-controls="dfu-tab"
+                    aria-selected="true"
+                  >
+                    DFU
+                  </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a
+                    class="nav-link"
+                    id="tab1-2-2"
+                    data-bs-toggle="tab"
+                    href="#build-tab"
+                    role="tab"
+                    aria-controls="build-tab"
+                    aria-selected="false"
+                  >
+                    Build
+                  </a>
+                </li>
+              </ul>
+              <div class="tab-content">
+                <!---------------------------------------- DFU Tab ---------------------------------------->
+                <div
+                  class="tab-pane fade show active"
+                  id="dfu-tab"
+                  role="tabpanel"
+                  aria-labelledby="tab1-2-1"
+                >
+                  <div
+                    class="container d-flex flex-column justify-content-center align-items-center"
+                  >
+                    <div class="row w-100">
+                      <div class="col-md-6 mx-auto">
+                        <div class="card p-4 border border-primary gap-4">
+                          <button
+                            class="btn btn-primary"
+                            onclick="SerialCom()"
+                            id="SetToBootloader"
+                          >
+                            Set to bootloader
+                          </button>
 
-                      <button
-                        class="btn btn-primary"
-                        onclick="connectWithUSB()"
-                        id="dfuProcessButton"
-                      >
-                        DFU Process
-                      </button>
-                    </div>
-                    <div class="card p-4 border alert alert-danger mt-2">
-                      <div>
-                        <i class="fa fa-exclamation-triangle"></i>
-                        <span>
-                          Please do not unplug or turn off the device while
-                          updating the firmware.
-                        </span>
-                        <ul style="list-style-type: decimal" class="m-0">
-                          <li>Set to bootloader mode</li>
-                          <li>Set to DFU mode</li>
-                        </ul>
+                          <button
+                            class="btn btn-primary"
+                            onclick="selectUSBDevice()"
+                            id="selectDeviceButton"
+                            disabled
+                          >
+                            Select USB Device
+                          </button>
+                          <button
+                            class="btn btn-primary"
+                            onclick="startDFUProcess()"
+                            id="UpgradeFirmwareButton"
+                            disabled
+                          >
+                            Upgrade Firmware
+                          </button>
+                        </div>
+                        <div class="card p-4 border alert alert-danger mt-2">
+                          <div>
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <span>
+                              Please do not unplug or turn off the device while
+                              updating the firmware.
+                            </span>
+                            <ul style="list-style-type: decimal" class="m-0">
+                              <li>Set to bootloader mode</li>
+                              <li>Select USB Device</li>
+                              <li>Upgrade Firmware</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6 text-center" id="dfu-container">
+                        <div id="dfu-loading">
+                          <div>
+                            <img
+                              src="https://i.gifer.com/7plX.gif"
+                              alt="Loading..."
+                              width="50"
+                            />
+                          </div>
+                          <div>
+                            <span id="loadingMessage"> </span>
+                          </div>
+                        </div>
+                        <ul id="dfu-progress-list"></ul>
                       </div>
                     </div>
                   </div>
-                  <div class="col-md-6 text-center" id="dfu-container">
-                    <div id="dfu-loading">
-                      <div>
-                        <img
-                          src="https://i.gifer.com/7plX.gif"
-                          alt="Loading..."
-                          width="50"
-                        />
+                </div>
+                <!---------------------------------------- Build Tab ---------------------------------------->
+                <div
+                  class="tab-pane fade"
+                  id="build-tab"
+                  role="tabpanel"
+                  aria-labelledby="tab1-2-2"
+                >
+                  <div
+                    class="container d-flex justify-content-center align-items-center"
+                  >
+                    <div class="row w-100">
+                      <div class="col-md-6 mx-auto">
+                        <div class="card p-4 border border-primary">
+                          <h3 class="card-title text-center">
+                            Cloud Micropython Build
+                          </h3>
+                          <form
+                            id="uploadFormBuild"
+                            action="{{ url_for('upload_file') }}"
+                            method="POST"
+                            enctype="multipart/form-data"
+                          >
+                            <input
+                              type="hidden"
+                              name="username"
+                              id="username"
+                              value="{{username}}"
+                            />
+                            <input
+                              type="hidden"
+                              name="user_room"
+                              id="userRoom"
+                              value=""
+                            />
+                            <div class="mb-3">
+                              <label for="board_name" class="form-label"
+                                >Board Name</label
+                              >
+                              <select
+                                class="form-select"
+                                aria-label="Default select example"
+                                name="board_name"
+                                id="board_name"
+                                required
+                              >
+                                <option selected disabled value="">
+                                  Choose device
+                                </option>
+                                <option value="RECON_V2">
+                                  RECON CONTROLLER V2
+                                </option>
+                                <option value="PYDAQ_S200WE">
+                                  PYDAQ S200WE
+                                </option>
+                                <option value="PYDAQ_B200">PYDAQ B200</option>
+                                <option value="PYTITAN">PYTITAN</option>
+                                <option value="ODIN-G">ODIN-G</option>
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="firmware_version" class="form-label"
+                                >Firmware version</label
+                              >
+                              <input
+                                type="text"
+                                class="form-control"
+                                id="firmware_version"
+                                name="firmware_version"
+                                placeholder="E.g. 1.0.1"
+                                maxlength="16"
+                                required
+                              />
+                            </div>
+                            <div class="mb-3">
+                              <label for="build_file" class="form-label"
+                                >Choose a file</label
+                              >
+                              <input
+                                class="form-control"
+                                type="file"
+                                name="build_file"
+                                id="build_file"
+                                required
+                                accept=".zip"
+                                onchange="validateBuildFile()"
+                              />
+                            </div>
+                            <div class="d-flex justify-content-center">
+                              <button
+                                type="submit"
+                                class="btn btn-primary w-25 fw-bold"
+                                disabled
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </form>
+
+                          <div id="build-loading">
+                            <img
+                              src="https://i.gifer.com/7plX.gif"
+                              alt="Loading..."
+                            />
+                            <div id="loading-message">
+                              Processing, please wait...
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span> Set to DFU mode, please wait... </span>
+                      <div class="col-md-6" id="build-result">
+                        <div
+                          id="build-error-container"
+                          class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+                          style="display: none"
+                        >
+                          <p
+                            id="build-error-message"
+                            class="text-center text-light p-0 m-0"
+                          ></p>
+                        </div>
+
+                        <div id="build-progress-container">
+                          <ul id="build-progress-list"></ul>
+                        </div>
+
+                        <div id="build-result-container" style="display: none">
+                          <div>
+                            <a
+                              id="download-link-hex"
+                              href=""
+                              target="_blank"
+                              download
+                              >Download the .hex file</a
+                            >
+                          </div>
+                          <div>
+                            <a
+                              id="download-link-dfu"
+                              href=""
+                              target="_blank"
+                              download
+                              >Download the .dfu file</a
+                            >
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <ul id="dfu-progress-list"></ul>
                   </div>
                 </div>
               </div>
@@ -556,9 +791,9 @@
             <!----------------------------------- TCP FTP sub-tab ----------------------------------->
             <div
               class="tab-pane fade"
-              id="tcpftp"
+              id="tcpftp-tab"
               role="tabpanel"
-              aria-labelledby="tcpftp-tab"
+              aria-labelledby="tab1-3"
             >
               <div
                 class="container mt-customize d-flex flex-column justify-content-center align-items-center"
@@ -684,7 +919,7 @@
                   </a>
                 </li>
               </ul>
-              <div class="tab-content mt-3">
+              <div class="tab-content">
                 <!----------------------------- Common settings sub sub Tab ---------------------------->
                 <div
                   class="tab-pane fade show active"
@@ -692,12 +927,7 @@
                   role="tabpanel"
                   aria-labelledby="common-settings"
                 >
-                  <div
-                    class="tab-pane fade show active"
-                    id="common-settings"
-                    role="tabpanel"
-                    aria-labelledby="common-settings-tab"
-                  >
+                  <div>
                     <!-- Content for Common settings -->
                     <h5 class="bg-dark text-light p-2">
                       Controller configuration
@@ -1623,139 +1853,6 @@
             </div>
           </div>
         </div>
-
-        <!---------------------------------------- Build Tab ---------------------------------------->
-        <div
-          class="tab-pane fade"
-          id="build-tab"
-          role="tabpanel"
-          aria-labelledby="tab3"
-        >
-          <div
-            class="container mt-customize d-flex justify-content-center align-items-center"
-          >
-            <div class="row w-100">
-              <div class="col-md-6 mx-auto">
-                <div class="card p-4 border border-primary">
-                  <h3 class="card-title text-center">
-                    Cloud Micropython Build
-                  </h3>
-                  <form
-                    id="uploadFormBuild"
-                    action="{{ url_for('upload_file') }}"
-                    method="POST"
-                    enctype="multipart/form-data"
-                  >
-                    <input
-                      type="hidden"
-                      name="username"
-                      id="username"
-                      value="{{username}}"
-                    />
-                    <input
-                      type="hidden"
-                      name="user_room"
-                      id="userRoom"
-                      value=""
-                    />
-                    <div class="mb-3">
-                      <label for="board_name" class="form-label"
-                        >Board Name</label
-                      >
-                      <select
-                        class="form-select"
-                        aria-label="Default select example"
-                        name="board_name"
-                        id="board_name"
-                        required
-                      >
-                        <option selected disabled value="">
-                          Choose device
-                        </option>
-                        <option value="RECON_V2">RECON CONTROLLER V2</option>
-                        <option value="PYDAQ_S200WE">PYDAQ S200WE</option>
-                        <option value="PYDAQ_B200">PYDAQ B200</option>
-                        <option value="PYTITAN">PYTITAN</option>
-                        <option value="ODIN-G">ODIN-G</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label for="firmware_version" class="form-label"
-                        >Firmware version</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="firmware_version"
-                        name="firmware_version"
-                        placeholder="E.g. 1.0.1"
-                        maxlength="16"
-                        required
-                      />
-                    </div>
-                    <div class="mb-3">
-                      <label for="build_file" class="form-label"
-                        >Choose a file</label
-                      >
-                      <input
-                        class="form-control"
-                        type="file"
-                        name="build_file"
-                        id="build_file"
-                        required
-                        accept=".zip"
-                        onchange="validateBuildFile()"
-                      />
-                    </div>
-                    <div class="d-flex justify-content-center">
-                      <button
-                        type="submit"
-                        class="btn btn-primary w-25 fw-bold"
-                        disabled
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </form>
-
-                  <div id="build-loading">
-                    <img src="https://i.gifer.com/7plX.gif" alt="Loading..." />
-                    <div id="loading-message">Processing, please wait...</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6" id="build-result">
-                <div
-                  id="build-error-container"
-                  class="alert alert-danger bg-danger p-2 mx-0 mt-4"
-                  style="display: none"
-                >
-                  <p
-                    id="build-error-message"
-                    class="text-center text-light p-0 m-0"
-                  ></p>
-                </div>
-
-                <div id="build-progress-container">
-                  <ul id="build-progress-list"></ul>
-                </div>
-
-                <div id="build-result-container" style="display: none">
-                  <div>
-                    <a id="download-link-hex" href="" target="_blank" download
-                      >Download the .hex file</a
-                    >
-                  </div>
-                  <div>
-                    <a id="download-link-dfu" href="" target="_blank" download
-                      >Download the .dfu file</a
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1871,17 +1968,17 @@
               // Display the success message and download link
               document.getElementById("build-result-container").style.display =
                 "block";
-              document.getElementById("download-link-hex").href = data.files[0];
-              document.getElementById("download-link-dfu").href = data.files[1];
+              document.getElementById("download-link-hex").href = data.hex_file;
+              document.getElementById("download-link-dfu").href = data.dfu_file;
               document.getElementById("build-loading").style.display = "none";
             } else {
-              // Display error message if any
+              document.getElementById("build-result").style.display = "block";
               document.getElementById("build-error-message").textContent =
                 data.message;
               document.getElementById("build-error-container").style.display =
                 "block";
               // Hide the loading spinner
-              document.getElementById("loading").style.display = "none";
+              document.getElementById("build-loading").style.display = "none";
             }
           } catch (error) {
             console.log("Error uploading file:", error);
