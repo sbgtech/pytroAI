@@ -1303,12 +1303,8 @@ function editApp(appKey) {
         " "
       )} </span> Application`;
       const fields = app[appKey];
-      let formHtml = "";
-      formHtml += `
-          <div class="mb-3 d-flex justify-content-between align-items-center">
-            <input type="hidden" id="editAppKey" value="${appKey}" />
-          </div>
-        `;
+      const formFields = [];
+
       for (const [key, value] of Object.entries(fields)) {
         let inputHtml = "";
 
@@ -1338,14 +1334,34 @@ function editApp(appKey) {
             inputHtml = `<input type="text" class="form-control flex-50" name="${key}" id="${key}" value="${value}">`;
           }
 
-          formHtml += `
+          formFields.push(`
           <div class="mb-3 d-flex justify-content-between align-items-center">
-          <label class="flex-50 text-start">${labelName}</label>
-          ${inputHtml}
+            <label class="flex-50 text-start">${labelName}</label>
+            ${inputHtml}
           </div>
-          `;
+        `);
         }
       }
+      formFields.push(`
+        <div class="d-flex justify-content-end gap-2">
+          <button onclick="hideEditAppsModal()" class="btn btn-dark">
+            Cancel
+          </button>
+          <button class="btn btn-success" onclick="saveAppChanges()">
+            Submit
+          </button>
+        </div>
+      `);
+      let formHtml = `
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <input type="hidden" id="editAppKey" value="${appKey}" />
+        </div>
+        ${
+          formFields.length > 1
+            ? formFields.join("")
+            : `<p class="text-danger fw-bold">No editable fields available for this application.</p>`
+        }
+      `;
 
       document.getElementById("editAppForm").innerHTML = formHtml;
     })

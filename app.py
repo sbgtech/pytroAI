@@ -4,8 +4,10 @@ from io import BytesIO
 from flask_socketio import SocketIO, emit
 import eventlet
 import serial.tools.list_ports
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.urandom(24) # Set your secret key
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['ALLOWED_EXTENSIONS'] = {'zip'}
@@ -216,7 +218,6 @@ def update_apps():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     username = request.form.get('username')  # Retrieve from form data
@@ -243,7 +244,6 @@ def upload_file():
 
     return jsonify({"status": "error", "message": "Only ZIP files are allowed"}), 400
 
-
 @app.route('/download/<board_name_id>/<filename>')
 def download_file(board_name_id, filename):
     file_path = os.path.join(FIRMWARE_DIRECTORY_PATH, board_name_id, filename)
@@ -262,7 +262,29 @@ def get_ports():
     ports_list = [{'device': port.device, 'name': port.name, 'description': port.description} for port in ports]
     print(ports_list)
 
+def read_json():
+    with open('apps.json', 'r') as file:
+        return json.load(file)
+    
+# Write updated data to the JSON file
+def write_json(data):
+    with open('apps.json', 'w') as file:
+        json.dump(data, file, indent=4)
 
+# Update or modify app settings
+@app.route('/api/apps/<app_name>', methods=['POST'])
+def update_app(app_name):
+    try:
+        updated_data = request.get_json()
+        data = read_json()
+        app_to_update = next((item for item in data["apps"] if app_name in item), None)
+        if not app_to_update:
+            return jsonify({"error": "App not found"}), 404
+        app_to_update[app_name].update(updated_data)
+        write_json(data)
+        return jsonify({"message": "App updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
