@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/css/layout.css" />
+    <title>Pytro AI</title>
+  </head>
+
+  <body>
+    <nav>
+      <div class="logo">
+        <div class="logo-image">
+          <img src="/static/images/pytronix_logo_white.png" alt="" />
+        </div>
+      </div>
+      <div class="menu-items">
+        <ul class="nav-link">
+          <li class="navList active">
+            <a href="#">
+              <ion-icon name="terminal-outline"></ion-icon>
+              <span class="links">Console</span>
+            </a>
+          </li>
+          <li class="navList">
+            <a href="#">
+              <ion-icon name="file-tray-outline"></ion-icon>
+              <span class="links">Hardware</span>
+            </a>
+          </li>
+          <li class="navList">
+            <a href="#">
+              <ion-icon name="layers-outline"></ion-icon>
+              <span class="links">Applications</span>
+            </a>
+          </li>
+          <li class="navList">
+            <a href="#">
+              <ion-icon name="code-outline"></ion-icon>
+              <span class="links">Program</span>
+            </a>
+          </li>
+          <li class="navList">
+            <a target="_blank" href="http://143.198.232.141:7000">
+              <ion-icon name="settings-outline"></ion-icon>
+              <span class="links">Settings</span>
+            </a>
+          </li>
+        </ul>
+        <!-- <ul class="bottom-link">
+          <li>
+            <a href="#">
+              <i class="fa fa-user"></i>
+              <span class="links">Profile</span>
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              <i class="fa fa-sign-out"></i>
+              <span class="links">Logout</span>
+            </a>
+          </li>
+        </ul> -->
+      </div>
+    </nav>
+
+    <section class="dashboard">
+      <!-- Console -->
+      <div class="data-table consoleTable">
+        <div
+          id="connectToSerialPortContainer"
+          class="d-flex flex-column flex-md-row justify-content-center justify-content-md-between align-items-center gap-2 gap-md-0 mb-3"
+        >
+          <div class="flex-50 w-100">
+            <button onclick="SerialMonitor()" class="btn btn-dark">
+              Connect to Serial Port
+            </button>
+          </div>
+          <div class="flex-50 w-100 d-flex justify-content-end">
+            <p style="margin-bottom: 0">
+              Status :
+              <span
+                class="device-status"
+                style="
+                  padding: 3px;
+                  color: white;
+                  background-color: #e34c5a;
+                  border-radius: 4px;
+                "
+                >Device disconnected</span
+              >
+            </p>
+          </div>
+        </div>
+        <div
+          class="row w-100"
+          style="height: 97%; display: none; margin-left: 0"
+          id="deviceInfoContainer"
+        >
+          <div
+            class="col-md-12 position-relative"
+            style="height: 97%"
+            id="terminalContainer"
+          >
+            <div
+              class="card"
+              id="resizeCmd"
+              style="
+                height: 100%;
+                max-height: 100%;
+                border-radius: 8px;
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 100%;
+              "
+            >
+              <div
+                class="card-header p-2 d-flex flex-column flex-md-row-reverse justify-content-between align-items-center gap-2 gap-md-0"
+                style="background-color: #2c2f38; color: white"
+              >
+                <div class="d-flex justify-content-end w-100 flex-30">
+                  <div class="d-flex">
+                    <span
+                      id="expandBtn"
+                      style="
+                        margin-right: 5px;
+                        background-color: #4cd964;
+                        border-radius: 50%;
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        cursor: pointer;
+                      "
+                      onclick="widenTerminal()"
+                      ><i class="fa fa-expand text-dark"></i
+                    ></span>
+                    <span
+                      id="minimizeBtn"
+                      style="
+                        margin-right: 5px;
+                        background-color: #ffcc00;
+                        border-radius: 50%;
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        cursor: pointer;
+                      "
+                      onclick="minimizeTerminal()"
+                      ><i
+                        class="fa fa-chevron-right text-dark"
+                        aria-hidden="true"
+                      ></i
+                    ></span>
+                    <span
+                      style="
+                        background-color: #ff8c86;
+                        border-radius: 50%;
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                      "
+                      ><i
+                        class="fa fa-times text-light disabled"
+                        aria-hidden="true"
+                      ></i>
+                    </span>
+                  </div>
+                </div>
+                <div
+                  class="d-flex gap-2 justify-content-center justify-content-md-start align-items-center w-100 flex-70"
+                >
+                  <button
+                    onclick="RunScript()"
+                    class="console-buttons btn btn-light"
+                  >
+                    Run <i class="fa fa-play text-success"></i>
+                  </button>
+                  <button
+                    onclick="StopScript()"
+                    class="console-buttons btn btn-light"
+                  >
+                    Stop <i class="fa fa-stop text-danger"></i>
+                  </button>
+                  <button
+                    onclick="clearTerminal()"
+                    class="console-buttons btn btn-light"
+                  >
+                    Clear
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    onclick="MachineReset()"
+                    class="console-buttons btn btn-light"
+                  >
+                    Reset
+                    <i class="fa fa-repeat text-warning"></i>
+                  </button>
+                  <button
+                    onclick="downloadLogs()"
+                    class="console-buttons btn btn-light"
+                  >
+                    Copy logs
+                    <i class="fa fa-copy" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="card-body"
+                style="
+                  background-color: black;
+                  color: white;
+                  font-family: 'Courier New', monospace;
+                  font-size: 14px;
+                  height: calc(100% - 40px);
+                  padding: 1.5px;
+                "
+              >
+                <textarea
+                  id="serial-output"
+                  style="background-color: black; border: none"
+                  class="w-100 h-100 text-light"
+                  readonly
+                >
+                </textarea>
+              </div>
+              <div class="d-flex">
+                <input
+                  type="text"
+                  id="serial-input"
+                  class="form-control text-light"
+                  style="
+                    background-color: black;
+                    border-radius: 0px;
+                    border-bottom-left-radius: 7px;
+                    border-bottom-right-radius: 7px;
+                    font-family: 'Courier New', monospace;
+                  "
+                  onkeydown="SendSerialInput(event)"
+                />
+              </div>
+              <!-- Resizing Handle -->
+              <div
+                class="resize-handle"
+                id="resizeHandle"
+                style="
+                  position: absolute;
+                  top: 0;
+                  left: -5px;
+                  width: 10px;
+                  height: 100%;
+                  cursor: ew-resize;
+                  display: none;
+                "
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--  Hardware -->
+      <div style="display: none" class="data-table hardwareTable">
+        <div
+          class="tab-pane fade show active h-100"
+          id="hardware-tab"
+          role="tabpanel"
+          aria-labelledby="tab2"
+        >
+          <!-- navbar for configuration tab -->
+          <ul class="nav nav-tabs sub-nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active d-flex justify-content-between align-items-center gap-2"
+                id="interfaces"
+                data-bs-toggle="tab"
+                href="#interfaces-tab"
+                role="tab"
+                aria-controls="interfaces-tab"
+                aria-selected="true"
+              >
+                <ion-icon
+                  name="image-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Interfaces</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="wiring"
+                data-bs-toggle="tab"
+                href="#wiring-tab"
+                role="tab"
+                aria-controls="wiring-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="analytics-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Wiring</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="mechanical"
+                data-bs-toggle="tab"
+                href="#mechanical-tab"
+                role="tab"
+                aria-controls="mechanical-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="build-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Mechanical</span>
+              </a>
+            </li>
+            <li class="nav-item ms-auto" role="presentation">
+              <p style="padding: 10px; margin-bottom: 0px">
+                Status :
+                <span
+                  class="device-status"
+                  style="
+                    padding: 3px;
+                    color: white;
+                    background-color: #e34c5a;
+                    border-radius: 4px;
+                  "
+                  >Device disconnected</span
+                >
+              </p>
+            </li>
+          </ul>
+          <div class="flex-column justify-content-between h-100">
+            <!-- Hardware Tabs Content -->
+            <div class="tab-content">
+              <!-- Interfaces -->
+              <div
+                class="tab-pane fade show active"
+                id="interfaces-tab"
+                role="tabpanel"
+                aria-labelledby="interfaces"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <div class="d-flex gap-3">
+                      <label> Board Name </label>
+                      <span
+                        id="boardName"
+                        class="config-form-board-name"
+                        style="font-weight: bold"
+                        >(Not connected)</span
+                      >
+                    </div>
+                  </div>
+                  <div class="card-body row d-flex align-items-center">
+                    <div
+                      class="d-flex flex-column flex-lg-row justify-content-between gap-2"
+                      style="height: 77vh"
+                    >
+                      <div id="imgContainer" class="flex-75">
+                        <img id="boardImage" class="img-fluid" />
+                      </div>
+                      <div
+                        id="tableContainer"
+                        class="overflow-auto flex-25"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Wiring -->
+              <div
+                class="tab-pane fade"
+                id="wiring-tab"
+                role="tabpanel"
+                aria-labelledby="wiring"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>Wiring</span>
+                  </div>
+                  <div class="card-body"></div>
+                </div>
+              </div>
+              <!-- Mechanical -->
+              <div
+                class="tab-pane fade"
+                id="mechanical-tab"
+                role="tabpanel"
+                aria-labelledby="mechanical"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>Mechanical</span>
+                  </div>
+                  <div class="card-body"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--  Application -->
+      <div style="display: none" class="data-table applicationTable">
+        <div
+          class="tab-pane fade show active h-100"
+          id="application-tab"
+          role="tabpanel"
+          aria-labelledby="tab2"
+        >
+          <!-- navbar for application tab -->
+          <ul class="nav nav-tabs sub-nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active d-flex justify-content-between align-items-center gap-2"
+                id="installed-app"
+                data-bs-toggle="tab"
+                href="#installed-app-tab"
+                role="tab"
+                aria-controls="installed-app-tab"
+                aria-selected="true"
+              >
+                <ion-icon
+                  name="checkmark-done-circle-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Installed</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="store"
+                data-bs-toggle="tab"
+                href="#store-tab"
+                role="tab"
+                aria-controls="store-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="storefront-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Store</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="updates-app"
+                data-bs-toggle="tab"
+                href="#updates-app-tab"
+                role="tab"
+                aria-controls="updates-app-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="cloud-download-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Updates</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="custom-app"
+                data-bs-toggle="tab"
+                href="#custom-app-tab"
+                role="tab"
+                aria-controls="custom-app-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="cube-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Custom</span>
+              </a>
+            </li>
+            <li class="nav-item ms-auto" role="presentation">
+              <p style="padding: 10px; margin-bottom: 0px">
+                Status :
+                <span
+                  class="device-status"
+                  style="
+                    padding: 3px;
+                    color: white;
+                    background-color: #e34c5a;
+                    border-radius: 4px;
+                  "
+                  >Device disconnected</span
+                >
+              </p>
+            </li>
+          </ul>
+          <div class="flex-column justify-content-between">
+            <!-- Application Tabs Content -->
+            <div class="tab-content pb-4">
+              <!-- Installed Apps -->
+              <div
+                class="tab-pane fade show active"
+                id="installed-app-tab"
+                role="tabpanel"
+                aria-labelledby="installed-app"
+              >
+                <div class="row card my-2 mx-1">
+                  <div
+                    class="card-header d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <span>Installed Applications</span>
+                    </div>
+                    <div>
+                      <button
+                        class="btn btn-light border border-dark"
+                        onclick="configForm()"
+                      >
+                        <i class="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body" id="apps-installed-container">
+                    <div
+                      class="d-flex justify-content-center align-items-center gap-3 loadMessageContainer"
+                    >
+                      <h6 class="text-center loadMessageText">
+                        Please click on refresh button to get applications
+                      </h6>
+                      <button
+                        class="btn btn-primary reconnect-btn"
+                        style="display: none"
+                        onclick="reconnectAndReloadConfig()"
+                      >
+                        Reconnect
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Store -->
+              <div
+                class="tab-pane fade"
+                id="store-tab"
+                role="tabpanel"
+                aria-labelledby="store"
+              >
+                <div class="row card my-2 mx-1">
+                  <div
+                    class="card-header d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <span>Store</span>
+                    </div>
+                    <div>
+                      <button
+                        class="btn btn-light border border-dark"
+                        onclick="configForm()"
+                      >
+                        <i class="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    class="card-body d-flex flex-column gap-2"
+                    id="apps-store-container"
+                  >
+                    <div
+                      class="d-flex justify-content-center align-items-center gap-3 loadMessageContainer"
+                    >
+                      <h6 class="text-center loadMessageText">
+                        Please click on refresh button to get stored
+                        applications
+                      </h6>
+                      <button
+                        class="btn btn-primary reconnect-btn"
+                        style="display: none"
+                        onclick="reconnectAndReloadConfig()"
+                      >
+                        Reconnect
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Updates -->
+              <div
+                class="tab-pane fade"
+                id="updates-app-tab"
+                role="tabpanel"
+                aria-labelledby="updates-app"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>Updates</span>
+                  </div>
+                  <div class="card-body">
+                    <div
+                      class="d-flex justify-content-between align-items-center"
+                    >
+                      <h4>Available updates</h4>
+                      <button class="btn btn-primary">
+                        <i class="fa fa-refresh"></i> Check for updates
+                      </button>
+                    </div>
+                    <div class="mt-2">
+                      <div class="alert alert-info">
+                        <h5 class="text-primary">Updates available</h5>
+                        <p class="m-0 text-primary">
+                          3 updates are available for installed applications.
+                          Some updates are critical.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table table-hover apps-table">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col">Application</th>
+                            <th scope="col">Current Version</th>
+                            <th scope="col">New Version</th>
+                            <th scope="col">Size</th>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td class="fw-medium">System Monitor</td>
+                            <td>2.1.0</td>
+                            <td>2.2.0</td>
+                            <td>1.2 MB</td>
+                            <td>
+                              <span class="priority-normal">Normal</span>
+                            </td>
+                            <td>
+                              <button class="btn btn-dark">
+                                <i
+                                  class="fa fa-arrow-circle-o-up"
+                                  aria-hidden="true"
+                                ></i>
+                                Update
+                              </button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="fw-medium">Network Manager</td>
+                            <td>3.0.1</td>
+                            <td>3.1.0</td>
+                            <td>2.4 MB</td>
+                            <td>
+                              <span class="priority-critical">Critical</span>
+                            </td>
+                            <td>
+                              <button class="btn btn-dark">
+                                <i
+                                  class="fa fa-arrow-circle-o-up"
+                                  aria-hidden="true"
+                                ></i>
+                                Update
+                              </button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="fw-medium">Diagnostic tool</td>
+                            <td>1.1.0</td>
+                            <td>1.2.1</td>
+                            <td>0.8 MB</td>
+                            <td>
+                              <span class="priority-normal">Normal</span>
+                            </td>
+                            <td>
+                              <button class="btn btn-dark">
+                                <i
+                                  class="fa fa-arrow-circle-o-up"
+                                  aria-hidden="true"
+                                ></i>
+                                Update
+                              </button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="5"></td>
+                            <td>
+                              <button class="btn btn-dark">
+                                <i
+                                  class="fa fa-arrow-circle-o-up"
+                                  aria-hidden="true"
+                                ></i>
+                                Update All
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Custom -->
+              <div
+                class="tab-pane fade"
+                id="custom-app-tab"
+                role="tabpanel"
+                aria-labelledby="custom-app"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>Custom</span>
+                  </div>
+                  <div class="card-body">
+                    <h4>Custom Applications</h4>
+                    <!-- Upload Box -->
+                    <div class="upload-box mb-4" id="uploadBox">
+                      <div class="mb-3">
+                        <ion-icon
+                          name="cube-outline"
+                          style="font-size: 4rem; color: gray"
+                        ></ion-icon>
+                      </div>
+                      <h6><strong>Install Custom Application</strong></h6>
+                      <!-- <p style="color: gray">
+                        Drag and drop application package here or click to
+                        browse
+                      </p> -->
+                      <button
+                        class="btn btn-dark"
+                        onclick="document.getElementById('fileInput').click();"
+                      >
+                        Browse Files
+                      </button>
+                      <input
+                        type="file"
+                        id="fileInput"
+                        style="display: none"
+                        onchange="handleFile(this)"
+                      />
+                      <div class="file-name" id="fileNameDisplay">
+                        No file selected
+                      </div>
+                    </div>
+                    <!-- Requirements -->
+                    <div class="requirement-box">
+                      <h6 class="fw-bold">Custom Application Requirements</h6>
+                      <ul class="mt-3">
+                        <li>
+                          Application must be packaged in a
+                          <code>.pkg</code> format
+                        </li>
+                        <li>
+                          Application must be signed with a valid certificate
+                        </li>
+                        <li>Maximum size: 50MB</li>
+                        <li>Supported runtimes: Node.js, Python, Java</li>
+                        <li>Applications must follow security guidelines</li>
+                      </ul>
+                      <a href="#" class="text-primary"
+                        >View Developer Documentation</a
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--  Program -->
+      <div style="display: none" class="data-table programTable">
+        <div
+          class="tab-pane fade show active h-100"
+          id="program-tab"
+          role="tabpanel"
+          aria-labelledby="tab2"
+        >
+          <!-- navbar for application tab -->
+          <ul class="nav nav-tabs sub-nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active d-flex justify-content-between align-items-center gap-2"
+                id="build"
+                data-bs-toggle="tab"
+                href="#build-tab"
+                role="tab"
+                aria-controls="build-tab"
+                aria-selected="true"
+              >
+                <ion-icon
+                  name="cloud-upload-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Build</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="dfu"
+                data-bs-toggle="tab"
+                href="#dfu-tab"
+                role="tab"
+                aria-controls="dfu-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="code-download-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Deploy</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="fileSystem"
+                data-bs-toggle="tab"
+                href="#fileSystem-tab"
+                role="tab"
+                aria-controls="fileSystem-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="documents-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>File System</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex justify-content-between align-items-center gap-2"
+                id="configForm"
+                data-bs-toggle="tab"
+                href="#configForm-tab"
+                role="tab"
+                aria-controls="configForm-tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="create-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Config Form</span>
+              </a>
+            </li>
+            <li class="nav-item ms-auto" role="presentation">
+              <p style="padding: 10px; margin-bottom: 0px">
+                Status :
+                <span
+                  class="device-status"
+                  style="
+                    padding: 3px;
+                    color: white;
+                    background-color: #e34c5a;
+                    border-radius: 4px;
+                  "
+                  >Device disconnected</span
+                >
+              </p>
+            </li>
+          </ul>
+
+          <div class="flex-column justify-content-between">
+            <!-- Program Tabs Content -->
+            <div class="tab-content">
+              <!-- Build -->
+              <div
+                class="tab-pane fade show active"
+                id="build-tab"
+                role="tabpanel"
+                aria-labelledby="build"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>BUILD</span>
+                  </div>
+                  <div
+                    class="card-body d-flex justify-content-center align-items-center h-100"
+                  >
+                    <div class="row w-100">
+                      <div class="col-md-6 mx-auto">
+                        <div class="card p-4 border border-dark">
+                          <form
+                            id="uploadFormBuild"
+                            action="{{ url_for('upload_file') }}"
+                            method="POST"
+                            enctype="multipart/form-data"
+                          >
+                            <input
+                              type="hidden"
+                              name="username"
+                              id="username"
+                              value="{{username}}"
+                            />
+                            <input
+                              type="hidden"
+                              name="user_room"
+                              id="userRoom"
+                              value=""
+                            />
+                            <div class="mb-3">
+                              <label for="board_name" class="form-label"
+                                >Board Name</label
+                              >
+                              <select
+                                class="form-select"
+                                aria-label="Default select example"
+                                name="board_name"
+                                id="board_name"
+                                required
+                              >
+                                <option selected disabled value="">
+                                  Choose device
+                                </option>
+                                <option value="RECON_V2">
+                                  RECON CONTROLLER V2
+                                </option>
+                                <option value="PYDAQ_S200WE">
+                                  PYDAQ S200WE
+                                </option>
+                                <option value="PYDAQ_B200">PYDAQ B200</option>
+                                <option value="PYTITAN">PYTITAN</option>
+                                <option value="ODIN-G">ODIN-G</option>
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="firmware_version" class="form-label"
+                                >Firmware version</label
+                              >
+                              <input
+                                type="text"
+                                class="form-control"
+                                id="firmware_version"
+                                name="firmware_version"
+                                placeholder="E.g. 1.0.1"
+                                maxlength="16"
+                                required
+                              />
+                            </div>
+                            <div class="mb-3">
+                              <label for="build_file" class="form-label"
+                                >Choose a file</label
+                              >
+                              <input
+                                class="form-control"
+                                type="file"
+                                name="build_file"
+                                id="build_file"
+                                required
+                                accept=".zip"
+                                onchange="validateBuildFile()"
+                              />
+                            </div>
+                            <div class="d-flex justify-content-center">
+                              <button
+                                type="submit"
+                                class="btn btn-dark w-25 fw-bold"
+                                disabled
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </form>
+
+                          <div id="build-loading">
+                            <img
+                              src="https://i.gifer.com/7plX.gif"
+                              alt="Loading..."
+                            />
+                            <div id="loading-message">
+                              Processing, please wait...
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6" id="build-result">
+                        <div
+                          id="build-error-container"
+                          class="alert alert-danger bg-danger p-2 mx-0 mt-4"
+                          style="display: none"
+                        >
+                          <p
+                            id="build-error-message"
+                            class="text-center text-light p-0 m-0"
+                          ></p>
+                        </div>
+
+                        <div id="build-progress-container">
+                          <ul id="build-progress-list"></ul>
+                        </div>
+
+                        <div id="build-result-container" style="display: none">
+                          <div>
+                            <a
+                              id="download-link-hex"
+                              href=""
+                              target="_blank"
+                              download
+                              >Download the .hex file</a
+                            >
+                          </div>
+                          <div>
+                            <a
+                              id="download-link-dfu"
+                              href=""
+                              target="_blank"
+                              download
+                              >Download the .dfu file</a
+                            >
+                            <span>or</span>
+                            <button
+                              class="btn btn-dark"
+                              id="uploadToDeviceBtn"
+                              onclick="SerialCom('build')"
+                            >
+                              Put Device in DFU Mode
+                            </button>
+                            <span>then</span>
+                            <button
+                              disabled
+                              id="selectDeviceButtonBuildDFU"
+                              class="btn btn-dark"
+                              onclick="selectedDfuFile('build')"
+                            >
+                              Upgrade Firmware
+                            </button>
+                            <button
+                              class="btn btn-dark"
+                              onclick="restartDevice('build')"
+                              id="restartDeviceBuildButton"
+                              disabled
+                            >
+                              Restart Device
+                            </button>
+                          </div>
+                          <div class="text-center" id="dfu-build-container">
+                            <div id="dfu-build-loading">
+                              <div>
+                                <img
+                                  src="https://i.gifer.com/7plX.gif"
+                                  alt="Loading..."
+                                  width="50"
+                                />
+                              </div>
+                              <div>
+                                <span id="dfu-build-loadingMessage"> </span>
+                              </div>
+                            </div>
+                            <ul id="dfu-build-progress-list"></ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Deploy -->
+              <div
+                class="tab-pane fade"
+                id="dfu-tab"
+                role="tabpanel"
+                aria-labelledby="dfu"
+              >
+                <div class="row card my-2 mx-1">
+                  <div class="card-header">
+                    <span>DFU</span>
+                  </div>
+                  <div
+                    class="card-body d-flex flex-column justify-content-center align-items-center h-100"
+                  >
+                    <div class="row w-100">
+                      <div class="col-md-6 mx-auto">
+                        <div class="card p-4 border border-dark gap-4">
+                          <button
+                            class="btn btn-dark"
+                            onclick="SerialCom('dfu')"
+                            id="SetToBootloader"
+                          >
+                            Set to bootloader
+                          </button>
+                          <button
+                            class="btn btn-dark"
+                            onclick="selectUSBDevice()"
+                            id="selectDeviceButton"
+                            disabled
+                          >
+                            Select USB Device
+                          </button>
+                          <button
+                            class="btn btn-dark"
+                            onclick="startDFUProcess()"
+                            id="UpgradeFirmwareButton"
+                            disabled
+                          >
+                            Upgrade Firmware
+                          </button>
+                          <button
+                            class="btn btn-dark"
+                            onclick="restartDevice('dfu')"
+                            id="restartDeviceDFUButton"
+                            disabled
+                          >
+                            Restart Device
+                          </button>
+                        </div>
+                        <div class="requirement-box mt-2">
+                          <div>
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <span style="font-weight: bold">
+                              Please do not unplug or turn off the device while
+                              updating the firmware.
+                            </span>
+                            <ul style="list-style-type: decimal" class="m-0">
+                              <li>Set to bootloader mode</li>
+                              <li>Select USB Device</li>
+                              <li>Upgrade Firmware</li>
+                              <li>Restart Device</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6 text-center" id="dfu-container">
+                        <div id="dfu-loading">
+                          <div>
+                            <img
+                              src="https://i.gifer.com/7plX.gif"
+                              alt="Loading..."
+                              width="50"
+                            />
+                          </div>
+                          <div>
+                            <span id="dfu-loadingMessage"> </span>
+                          </div>
+                        </div>
+                        <ul id="dfu-progress-list"></ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- File System -->
+              <div
+                class="tab-pane fade"
+                id="fileSystem-tab"
+                role="tabpanel"
+                aria-labelledby="fileSystem"
+              >
+                <div class="row card my-2 mx-1">
+                  <div
+                    class="card-header d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <span>File system</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <div
+                        class="form-check form-check-custom form-switch form-switch-custom"
+                      >
+                        <label
+                          class="form-check-label form-check-label-custom text-dark"
+                        >
+                          FLASH
+                        </label>
+                        <input
+                          class="form-check-input form-check-input-custom cursor-pointer"
+                          type="checkbox"
+                          id="flashCheckbox"
+                          onchange="handleFlash(event)"
+                        />
+                      </div>
+                      <button
+                        class="btn btn-light border border-dark"
+                        id="FilesystemRefreshButton"
+                        onclick="fileSystem()"
+                      >
+                        <i class="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body" id="fileSystemContainerTable">
+                    <div id="fileSystemTable" style="display: none">
+                      <table
+                        class="table table-responsive table-hover apps-table"
+                      >
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col">Icon</th>
+                            <th scope="col">File</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Size</th>
+                          </tr>
+                        </thead>
+                        <tbody id="filesList"></tbody>
+                      </table>
+                    </div>
+                    <div id="fileSystemLoadMessage">
+                      <h6 class="text-center" id="fileSystemLoadMessageText">
+                        Please click on refresh button to get data
+                      </h6>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Config Form -->
+              <div
+                class="tab-pane fade"
+                id="configForm-tab"
+                role="tabpanel"
+                aria-labelledby="configForm"
+              >
+                <div class="row card my-2 mx-1">
+                  <div
+                    class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-center gap-2 gap-lg-0"
+                  >
+                    <div class="d-flex gap-2 flex-35 align-items-center">
+                      <label> Board Name </label>
+                      <span
+                        id="boardName"
+                        class="config-form-board-name"
+                        style="font-weight: bold"
+                        >(Not connected)</span
+                      >
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-md-row justify-content-center justify-content-lg-end flex-65 gap-2 w-100"
+                    >
+                      <button
+                        class="btn btn-light border border-dark configForm-buttons"
+                        id="ConfigFormUploadButton"
+                        onclick="uploadToForm()"
+                        style="display: none"
+                      >
+                        Upload
+                      </button>
+                      <button
+                        class="btn btn-light border border-dark configForm-buttons"
+                        id="ConfigFormDownloadButton"
+                        onclick="saveDataToJSON()"
+                        style="display: none"
+                      >
+                        Download
+                      </button>
+                      <button
+                        class="btn btn-light border border-dark"
+                        id="ConfigFormRefreshButton"
+                        onclick="configForm()"
+                      >
+                        <i class="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                      <button
+                        class="btn btn-primary configForm-buttons"
+                        id="addNewFieldBtn"
+                        onclick="displayNewFieldModal()"
+                        style="display: none"
+                      >
+                        <i class="fa fa-plus-circle"></i>
+                        Add New Field
+                      </button>
+                      <button
+                        class="btn btn-success configForm-buttons"
+                        id="saveFormBtn"
+                        onclick="applyConfig(event)"
+                        style="display: none"
+                      >
+                        <i class="fa fa-save"></i>
+                        Save Form
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div id="configFormDataContainer" style="display: none">
+                      <div id="dynamicConfigForm"></div>
+                    </div>
+                    <div
+                      class="d-flex justify-content-center align-items-center gap-3 loadMessageContainer"
+                    >
+                      <h6 class="text-center loadMessageText">
+                        Please click on refresh button to get data
+                      </h6>
+                      <button
+                        class="btn btn-primary reconnect-btn"
+                        style="display: none"
+                        onclick="reconnectAndReloadConfig()"
+                      >
+                        Reconnect
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--  Settings -->
+      <div style="display: none" class="data-table settingsTable">
+        <div class="title">
+          <span class="text">move to the settings site</span>
+          <a target="_blank" href="http://143.198.232.141:7000"
+            >PytroAI Settings</a
+          >
+        </div>
+      </div>
+    </section>
+    <!-- form to set new parameter and input type -->
+    <div id="modal">
+      <div id="modalContent">
+        <span class="close-icon" id="closeModal" onclick="hideNewFieldModal()"
+          >&times;</span
+        >
+        <h4>Add New Field</h4>
+        <div class="mt-4" id="newFieldForm">
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+            <label for="label_name" class="flex-30">Parameter Name :</label>
+            <input
+              type="text"
+              required
+              class="form-control flex-60"
+              id="label_name"
+              value="PYTRO_"
+              oninput="prefixWithPytro(this)"
+            />
+          </div>
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+            <label for="typeSelect" class="flex-30">Type :</label>
+            <select
+              id="typeSelect"
+              class="form-select flex-60"
+              onchange="handleTypeChange(this)"
+            >
+              <option selected disabled>Select Type</option>
+              <option value="TEXT">Text</option>
+              <option value="SELECT">Select</option>
+              <option value="CHECKBOX">Checkbox</option>
+            </select>
+          </div>
+          <div id="addInputBlock" style="display: none">
+            <div class="mb-3 d-flex justify-content-between">
+              <label for="value_name" class="flex-30">Value :</label>
+              <input
+                type="text"
+                required
+                class="form-control flex-60"
+                id="value_name"
+              />
+            </div>
+          </div>
+          <div id="addOptionsBlock" style="display: none">
+            <div class="mb-3 d-flex justify-content-between">
+              <label clqss="flex-30"> Add options </label>
+              <div id="optionsWrapper" class="d-flex flex-column flex-60">
+                <div class="d-flex align-items-center custom-gap mb-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    oninput="optionToUppercase(this)"
+                  />
+                  <i
+                    class="fa fa-plus"
+                    style="cursor: pointer"
+                    onclick="addOptionInput(this)"
+                  ></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="addCheckboxBlock" style="display: none">
+            <div class="mb-3 d-flex justify-content-between">
+              <label for="checkbox_value" class="flex-30"
+                >Enable / Disable :</label
+              >
+              <div class="d-flex justify-content-start flex-60">
+                <input
+                  class="form-check-input mt-0"
+                  type="checkbox"
+                  id="checkbox_value"
+                  style="width: 30px; height: 20px"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button onclick="hideNewFieldModal()" class="btn btn-dark">
+              Cancel
+            </button>
+            <button class="btn btn-primary" onclick="saveNewField()">
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="popup"></div>
+    <!-- Edit apps Modal -->
+    <div id="editAppsModal">
+      <div id="editAppsModalContent">
+        <span
+          class="close-icon"
+          id="editAppsCloseModal"
+          onclick="hideEditAppsModal()"
+          >&times;</span
+        >
+        <div id="editAppContainer">
+          <div class="editAppTitleContainer">
+            <h4 class="editAppTitle" id="editAppTitle"></h4>
+          </div>
+          <div class="editAppContentContainer">
+            <div id="editAppForm"></div>
+            <div class="d-flex justify-content-end gap-2">
+              <button onclick="hideEditAppsModal()" class="btn btn-dark">
+                Cancel
+              </button>
+              <button class="btn btn-success" onclick="saveAppChanges()">
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const uploadFileUrl = "{{ url_for('upload_file') }}";
+    </script>
+    <script src="/static/js/serial.js" defer></script>
+    <script src="/static/js/layout.js"></script>
+  </body>
+</html>

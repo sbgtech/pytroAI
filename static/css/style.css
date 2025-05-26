@@ -1,0 +1,190 @@
+/* Style for the loading spinner in the build page */
+/* #dfu-bootloader-loading {
+  display: none;
+  text-align: center;
+} */
+#serial-input::placeholder {
+  color: rgb(185, 185, 185); /* Set the placeholder text color to red */
+  font-family: "Courier New", monospace;
+}
+#dfu-container {
+  display: none;
+}
+#dfu-loading {
+  display: none;
+  text-align: center;
+}
+#dfu-build-container {
+  display: none;
+  margin-top: 8px;
+}
+#dfu-build-loading {
+  display: none;
+  text-align: center;
+  margin-bottom: 8px;
+}
+/* Style for the loading spinner in the tcpftp page */
+#tcpftp-loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
+#tcpftp-loading img {
+  width: 50px;
+}
+#tcpftp-result {
+  display: none;
+}
+
+/* Ensure the progress list stays visible in the tcpftp page */
+#tcpftp-progress-list {
+  display: block;
+  list-style-type: none;
+  padding: 0;
+}
+
+#tcpftp-progress-list li {
+  font-size: 14px;
+}
+
+/* Style for the loading spinner in the build page */
+#build-loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
+#build-loading img {
+  width: 50px;
+}
+#build-result {
+  display: none;
+}
+
+/* Ensure the progress list stays visible in the build page */
+#build-progress-list {
+  display: block;
+  list-style-type: none;
+  padding: 0;
+}
+
+#build-progress-list li {
+  font-size: 14px;
+}
+
+.fa-check-circle {
+  color: #0b9b0b;
+}
+.mt-customize {
+  margin-top: 3em;
+}
+
+.bg-primary,
+.btn-primary {
+  background-color: #2674c6;
+  border-color: #0f4e91;
+}
+.bg-primary:hover,
+.btn-primary:hover {
+  background-color: #0f4e91;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: #74a2e7;
+}
+
+/* Make tabs full width */
+.nav-tabs {
+  display: flex;
+  width: 100%;
+  background-color: #0f5aaa;
+  /* border-bottom: 2px solid #007bff; */
+}
+.sub-nav-tabs {
+  background-color: #4b7bc5;
+}
+.nav-tabs .nav-item {
+  /* flex: 1; */
+  text-align: center;
+  padding-inline: 20px;
+}
+
+.nav-pills {
+  padding: 10px;
+}
+.nav-tabs .nav-link {
+  width: 100%;
+  color: #efefef;
+  /* background-color: #2674c6; */
+  border: none;
+  border-radius: 0;
+  padding: 10px 10px;
+  font-weight: normal;
+}
+.nav-tabs .nav-link:hover {
+  background-color: #2569b1;
+}
+.nav-tabs .nav-link.active {
+  /* background-color: #1b60aa; */
+  background-color: #ffffff2e;
+  color: white;
+  font-weight: bold;
+  border-bottom: 3px solid white;
+}
+.tab-content {
+  background: #ffffff;
+  /* border: 1px solid #007bff; */
+  border-top: none;
+  /* padding: 4px; */
+}
+
+/* Make tabs responsive */
+@media (max-width: 767px) {
+  .nav-tabs .nav-item {
+    text-align: left; /* Align text to the left on small screens */
+  }
+}
+
+.cont {
+  columns: 3;
+  column-gap: 5px;
+}
+.cont > div {
+  background: #c1c1ff;
+  margin-bottom: 5px;
+  break-inside: avoid;
+}
+
+#popup {
+  display: none;
+  position: fixed;
+  bottom: 20px; /* Position 20px from the bottom */
+  right: 20px; /* Position 20px from the right */
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0; /* Start with opacity 0 for fade-in */
+  transition: opacity 1s ease-in-out; /* Fade-in effect */
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Fade-out animation */
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

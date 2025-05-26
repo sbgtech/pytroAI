@@ -1,0 +1,123 @@
+{
+  "apps": [
+    {
+      "PYTRO_MCU_LOG": {
+        "NAME": "PYTRO MCU",
+        "PYTRO_MCU_LOG_ENABLE": "ON"
+      }
+    },
+    {
+      "PYTRO_CELL": {
+        "CATEGORY": "Cloud",
+        "DESCRIPTION": "Implement CELL functionality",
+        "NAME": "PYTRO CELL",
+        "PYTRO_CELL_APN": "teal",
+        "PYTRO_CELL_ENABLE": "OFF",
+        "PYTRO_CELL_HIGH_WORD_FIRST": "OFF",
+        "SIZE": 5.7
+      }
+    },
+    {
+      "PYTRO_TCP": {
+        "CATEGORY": "Communication",
+        "DESCRIPTION": "Implement TCP functionality serial connection",
+        "NAME": "PYTRO TCP",
+        "PYTRO_TCP_DNS": "8.8.8.8",
+        "PYTRO_TCP_ENABLE": "OFF",
+        "PYTRO_TCP_GATEWAY": "192.168.10.1",
+        "PYTRO_TCP_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_TCP_MODBUS_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_TCP_MODBUS_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_TCP_MODBUS_PORT": "503",
+        "PYTRO_TCP_MODBUS_SLAVEID": "1",
+        "PYTRO_TCP_SUBNET_MASK": "255.255.255.0",
+        "SIZE": 2
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4851": {
+        "CATEGORY": "Protocol",
+        "DESCRIPTION": "Implement Modbus RTU Slave functionality over RS-4851 serial connection",
+        "NAME": "PYTRO MBRTU RS4851",
+        "PUBLISHER": "Industrial Protocols Inc.",
+        "PYTRO_MBRTU_RS4851_BAUDRATE": "9600",
+        "PYTRO_MBRTU_RS4851_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS4851_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MBRTU_RS4851_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_MBRTU_RS4851_SLAVEID": "1",
+        "SIZE": 9
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4852": {
+        "CATEGORY": "Protocol",
+        "DESCRIPTION": "Implement Modbus RTU Slave functionality over RS-4852 serial connection",
+        "NAME": "PYTRO MBRTU RS4852",
+        "PUBLISHER": "Industrial Protocols Inc.",
+        "PYTRO_MBRTU_RS4852_BAUDRATE": "9600",
+        "PYTRO_MBRTU_RS4852_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS4852_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MBRTU_RS4852_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_MBRTU_RS4852_SLAVEID": "1",
+        "SIZE": 9.3
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS232": {
+        "CATEGORY": "Protocol",
+        "DESCRIPTION": "Implement Modbus RTU Slave functionality over RS-232 serial connection",
+        "NAME": "PYTRO MBRTU RS232",
+        "PUBLISHER": "Industrial Protocols Inc.",
+        "PYTRO_MBRTU_RS232_BAUDRATE": "9600",
+        "PYTRO_MBRTU_RS232_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS232_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MBRTU_RS232_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_MBRTU_RS232_SLAVEID": "1",
+        "SIZE": 4.5
+      }
+    },
+    {
+      "PYTRO_RADIO": {
+        "CATEGORY": "Communication",
+        "DESCRIPTION": "Implement Radio functionality serial connection",
+        "NAME": "PYTRO RADIO",
+        "PUBLISHER": "Communication Inc.",
+        "PYTRO_RADIO_ADDRESS": "B105",
+        "PYTRO_RADIO_ENABLE": "ON",
+        "PYTRO_RADIO_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_RADIO_MODE": [
+          "P2P_MASTER",
+          "P2P_SLAVE",
+          "MESH_SLAVE",
+          "MESH_MASTER"
+        ],
+        "PYTRO_RADIO_SLAVE_ID": "B103",
+        "SIZE": 3.5
+      }
+    },
+    {
+      "PYTRO_BLE": {
+        "CATEGORY": "Bluetooth",
+        "DESCRIPTION": "Implement BLE functionality with bluetooth",
+        "NAME": "PYTRO_BLE",
+        "PYTRO_BLE_ENABLE": "ON",
+        "PYTRO_BLE_PIN": "110011",
+        "SIZE": 4.6
+      }
+    }
+  ],
+  "UNITID": "32248859292929292980",
+  "BOARD": "PYTRONIX_PYDAQ_S200WE"
+}
