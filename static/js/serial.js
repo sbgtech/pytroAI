@@ -1462,8 +1462,39 @@ function hideEditAppsModal() {
   document.getElementById("editAppsModal").style.display = "none";
 }
 
+function showCustomConfirm() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirmModal");
+    modal.style.display = "block";
+
+    const yesBtn = document.getElementById("confirmYes");
+    const noBtn = document.getElementById("confirmNo");
+
+    const cleanup = () => {
+      modal.style.display = "none";
+      yesBtn.removeEventListener("click", onYes);
+      noBtn.removeEventListener("click", onNo);
+    };
+
+    const onYes = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const onNo = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    yesBtn.addEventListener("click", onYes);
+    noBtn.addEventListener("click", onNo);
+  });
+}
+
 // stop app
-function stopApp(appKey) {
+async function stopApp(appKey) {
+  const confirmed = await showCustomConfirm();
+  if (!confirmed) return;
   const enableKey = appKey + "_ENABLE";
   const updatedData = {};
   const mergedConfig = {};
