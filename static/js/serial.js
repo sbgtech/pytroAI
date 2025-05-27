@@ -1070,7 +1070,8 @@ async function SerialMonitor() {
                       const size = appData.SIZE
                         ? `${appData.SIZE} MB`
                         : "Size Not Available";
-                      const is_enabled = appData[`${appKey}_ENABLE`] === "ON";
+                      // const is_enabled = appData[`${appKey}_ENABLE`];
+                      const enableField = appKey + "_ENABLE";
 
                       // Loop through configParameters keys and update appData if key matches
                       for (const configKey in configParameters) {
@@ -1103,7 +1104,7 @@ async function SerialMonitor() {
                           </div>
                           <div class="d-flex align-items-center flex-15">
                           ${
-                            is_enabled
+                            appData[enableField].toUpperCase() === "ON"
                               ? `<button class="btn btn-success w-100 disabled">
                               <i class="fa fa-check" aria-hidden="true"></i> Installed
                             </button>`
@@ -1122,7 +1123,6 @@ async function SerialMonitor() {
                         icon.style.color = getRandomColor();
                       });
 
-                      const enableField = appKey + "_ENABLE";
                       if (
                         appData[enableField] &&
                         appData[enableField].toUpperCase() === "ON"
