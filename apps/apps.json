@@ -1,0 +1,171 @@
+{
+  "apps": [
+    {
+      "PYTRO_MCU_LOG": {
+        "NAME": "",
+        "PYTRO_MCU_LOG_ENABLE": ""
+      }
+    },
+    {
+      "PYTRO_CELL": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_CELL_APN": "",
+        "PYTRO_CELL_ENABLE": "",
+        "PYTRO_CELL_HIGH_WORD_FIRST": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TCP": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_TCP_DNS": "",
+        "PYTRO_TCP_ENABLE": "",
+        "PYTRO_TCP_GATEWAY": "",
+        "PYTRO_TCP_IP_ADDRESS": "",
+        "PYTRO_TCP_MODBUS_HIGH_WORD_FIRST": "",
+        "PYTRO_TCP_MODBUS_MODE": [],
+        "PYTRO_TCP_MODBUS_PORT": "",
+        "PYTRO_TCP_MODBUS_SLAVEID": "",
+        "PYTRO_TCP_SUBNET_MASK": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4851": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS4851_BAUDRATE": "",
+        "PYTRO_MBRTU_RS4851_ENABLE": "",
+        "PYTRO_MBRTU_RS4851_HIGH_WORD_FIRST": "",
+        "PYTRO_MBRTU_RS4851_MODE": [],
+        "PYTRO_MBRTU_RS4851_SLAVEID": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4852": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS4852_BAUDRATE": "",
+        "PYTRO_MBRTU_RS4852_ENABLE": "",
+        "PYTRO_MBRTU_RS4852_HIGH_WORD_FIRST": "",
+        "PYTRO_MBRTU_RS4852_MODE": [],
+        "PYTRO_MBRTU_RS4852_SLAVEID": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS232": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS232_BAUDRATE": "",
+        "PYTRO_MBRTU_RS232_ENABLE": "",
+        "PYTRO_MBRTU_RS232_HIGH_WORD_FIRST": "",
+        "PYTRO_MBRTU_RS232_MODE": [],
+        "PYTRO_MBRTU_RS232_SLAVEID": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_RADIO": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_RADIO_ADDRESS": "",
+        "PYTRO_RADIO_ENABLE": "",
+        "PYTRO_RADIO_HIGH_WORD_FIRST": "",
+        "PYTRO_RADIO_MODE": [],
+        "PYTRO_RADIO_SLAVE_ID": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_BLE": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_BLE_ENABLE": "",
+        "PYTRO_BLE_PIN": "",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_DMM": {
+        "CATEGORY": "Modbus RTU",
+        "DESCRIPTION": "Modbus RTU Master For Dynagen Controllers Using RS485 Port.",
+        "NAME": "DYNAGEN MODBUS MASTER",
+        "PUBLISHER": "",
+        "PYTRO_DMM_ENABLE": "",
+        "PYTRO_DMM_RS485_BAUDRATE": "",
+        "PYTRO_DMM_RS485_HIGH_WORD_FIRST": "",
+        "PYTRO_DMM_RS485_SLAVEID": "",
+        "PYTRO_DMM_CELL_HIGH_WORD_FIRST": "",
+        "PYTRO_DMM_CELL_APN": "",
+        "PYTRO_DMM_EVENTDICT": {},
+        "PYTRO_DMM_REGDICT": {},
+        "PYTRO_DMM_HARDWARE": ["CELL", "RS485"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_WPRM": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "SIZE": "",
+        "PYTRO_WPRM_ENABLE": "",
+        "PYTRO_WPRM_ADDRESS": "",
+        "PYTRO_WPRM_SLAVE_ID": "",
+        "PYTRO_WPRM_POLLRATE": "",
+        "PYTRO_WPRM_OFFSET": "",
+        "PYTRO_WPRM_NUMREG": "",
+        "PYTRO_WPRM_CHANNEL": "",
+        "PYTRO_WPRM_HARDWARE": ["CELL", "RADIO", "RS485"]
+      }
+    },
+    {
+      "PYTRO_WPRS": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "SIZE": "",
+        "PYTRO_WPRS_ENABLE": "",
+        "PYTRO_WPRS_ADDRESS": "",
+        "PYTRO_WPRS_CHANNEL": "",
+        "PYTRO_WPRS_HARDWARE": ["RADIO", "RS485"]
+      }
+    },
+    {
+      "PYTRO_WDFRM": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "SIZE": "",
+        "PYTRO_WDFRM_ENABLE": "",
+        "PYTRO_WDFRM_ADDRESS": "",
+        "PYTRO_WDFRM_SLAVE_ID": "",
+        "PYTRO_WDFRM_SALES_ID": "",
+        "PYTRO_WDFRM_INJ_ID": "",
+        "PYTRO_WDFRM_NUMREG": "",
+        "PYTRO_WDFRM_CHANNEL": "",
+        "PYTRO_WDFRM_HARDWARE": ["RADIO", "CELL", "RS485"]
+      }
+    }
+  ],
+  "UNITID": "",
+  "BOARD": ""
+}

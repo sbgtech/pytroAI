@@ -16,6 +16,7 @@ user_rooms = {}
 
 NEW_DIRECTORY_PATH = '/root/micropython/ports/stm32/modules'
 FIRMWARE_DIRECTORY_PATH = '/root/micropython/ports/stm32'
+STATIC_FILE = "/apps/apps.json"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -200,21 +201,40 @@ def home():
 
 @app.route('/get-data')
 def get_data():
-    with open('apps.json') as f:
+    unitId = request.args.get("macId")
+    if not unitId:
+        return jsonify({"error": "MAC address required"}), 400
+    apps_dir = "apps"
+    os.makedirs(apps_dir, exist_ok=True)  # Ensure the 'apps' folder exists
+    
+    file_path = os.path.join(apps_dir, f"apps_{unitId}.json")
+    static_file_path = os.path.join(apps_dir, "apps.json")
+    if not os.path.exists(file_path):
+        try:
+            with open(static_file_path) as f:
+                static_data = json.load(f)
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"Failed to read static file: {e}"}), 500
+        default_data = {"apps": static_data.get("apps", []), "unitId": "", "board": ""}
+        with open(file_path, "w") as f:
+            json.dump(default_data, f, indent=2)
+    with open(file_path) as f:
         data = json.load(f)
     return jsonify(data)
 
 @app.route("/update-apps", methods=["POST"])
 def update_apps():
     data = request.get_json()
-    
-    if not data:
-        return jsonify({"status": "error", "message": "No data provided"}), 400
-
+    unitId = data.get("unitId")
+    if not data or not unitId:
+        return jsonify({"status": "error", "message": "No data or MAC address provided"}), 400
+    apps_dir = "apps"
+    os.makedirs(apps_dir, exist_ok=True)  # Ensure the directory exists
+    file_path = os.path.join(apps_dir, f"apps_{unitId}.json")
     try:
-        with open("apps.json", "w") as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
-        return jsonify({"status": "success", "message": "apps.json updated"})
+        return jsonify({"status": "success", "message": f"{file_path} updated"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -262,30 +282,46 @@ def get_ports():
     ports_list = [{'device': port.device, 'name': port.name, 'description': port.description} for port in ports]
     print(ports_list)
 
-def read_json():
-    with open('apps.json', 'r') as file:
-        return json.load(file)
+# def read_json():
+#     with open('apps.json', 'r') as file:
+#         return json.load(file)
     
 # Write updated data to the JSON file
-def write_json(data):
-    with open('apps.json', 'w') as file:
-        json.dump(data, file, indent=4)
+# def write_json(data):
+#     with open('apps.json', 'w') as file:
+#         json.dump(data, file, indent=4)
 
 # Update or modify app settings
-@app.route('/api/apps/<app_name>', methods=['POST'])
-def update_app(app_name):
-    try:
-        updated_data = request.get_json()
-        data = read_json()
-        app_to_update = next((item for item in data["apps"] if app_name in item), None)
-        if not app_to_update:
-            return jsonify({"error": "App not found"}), 404
-        app_to_update[app_name].update(updated_data)
-        write_json(data)
-        return jsonify({"message": "App updated successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+# @app.route('/api/apps/<app_name>', methods=['POST'])
+# def update_app(app_name):
+#     try:
+#         updated_data = request.get_json()
+#         data = read_json()
+#         app_to_update = next((item for item in data["apps"] if app_name in item), None)
+#         if not app_to_update:
+#             return jsonify({"error": "App not found"}), 404
+#         app_to_update[app_name].update(updated_data)
+#         write_json(data)
+#         return jsonify({"message": "App updated successfully"}), 200
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
+# state = {"enabled": 1, "isAll": 1}
+
+# @app.route("/get_state", methods=["GET"])
+# def get_state():
+#     return jsonify(state)
+
+# @app.route("/set_state", methods=["POST"])
+# def set_state():
+#     data = request.get_json()
+#     enabled = data.get("enabled")
+#     isAll = data.get("isAll")
+#     if enabled in [0, 1]:
+#         state["enabled"] = enabled
+#         state["isAll"] = isAll
+#         return jsonify({"status": "updated", "enabled": enabled, "isAll": isAll}), 200
+#     return jsonify({"error": "Invalid value"}), 400
 
 if __name__ == "__main__":
     socketio.run(app, host='0.0.0.0', port=9090, debug=True)

@@ -26,7 +26,7 @@
       </div>
       <div class="menu-items">
         <ul class="nav-link">
-          <li class="navList active">
+          <li class="navList active" id="firstLi">
             <a href="#">
               <ion-icon name="terminal-outline"></ion-icon>
               <span class="links">Console</span>
@@ -82,7 +82,11 @@
           class="d-flex flex-column flex-md-row justify-content-center justify-content-md-between align-items-center gap-2 gap-md-0 mb-3"
         >
           <div class="flex-50 w-100">
-            <button onclick="SerialMonitor()" class="btn btn-dark">
+            <button
+              onclick="SerialMonitor()"
+              class="btn btn-dark"
+              id="serialMonitorBtn"
+            >
               Connect to Serial Port
             </button>
           </div>
@@ -1418,10 +1422,12 @@
         </div>
       </div>
     </div>
+
     <div id="popup"></div>
+
     <!-- Edit apps Modal -->
     <div id="editAppsModal">
-      <div id="editAppsModalContent">
+      <div id="editAppsModalContent" class="modal-content">
         <span
           class="close-icon"
           id="editAppsCloseModal"
@@ -1433,15 +1439,53 @@
             <h4 class="editAppTitle" id="editAppTitle"></h4>
           </div>
           <div class="editAppContentContainer">
-            <div id="editAppForm"></div>
-            <!-- <div class="d-flex justify-content-end gap-2">
-              <button onclick="hideEditAppsModal()" class="btn btn-dark">
-                Cancel
-              </button>
-              <button class="btn btn-success" onclick="saveAppChanges()">
-                Submit
-              </button>
+            <!-- Nav tabs -->
+            <!-- <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <a
+                  class="nav-link active"
+                  id="registerSettings-tab"
+                  data-bs-toggle="tab"
+                  href="#registerSettings"
+                  role="tab"
+                  aria-controls="registerSettings"
+                  aria-selected="true"
+                  >Register Settings</a
+                >
+              </li>
+              <li class="nav-item" role="presentation">
+                <a
+                  class="nav-link"
+                  id="advancedSettings-tab"
+                  data-bs-toggle="tab"
+                  href="#advancedSettings"
+                  role="tab"
+                  aria-controls="advancedSettings"
+                  aria-selected="false"
+                  >Advanced Settings</a
+                >
+              </li>
+            </ul> -->
+            <!-- Tab content -->
+            <!-- <div class="tab-content mt-2" id="editAppTabsContent">
+              <div
+                class="tab-pane fade show active"
+                id="registerSettings"
+                role="tabpanel"
+                aria-labelledby="registerSettings-tab"
+              >
+                <div id="editAppFormRegisterSettings"></div>
+              </div>
+              <div
+                class="tab-pane fade"
+                id="advancedSettings"
+                role="tabpanel"
+                aria-labelledby="advancedSettings-tab"
+              >
+                <div id="editAppFormAdvancedSettings"></div>
+              </div>
             </div> -->
+            <div id="editAppForm"></div>
           </div>
         </div>
       </div>
@@ -1459,6 +1503,13 @@
           <button class="btn btn-secondary" id="confirmNo">Cancel</button>
           <button class="btn btn-danger" id="confirmYes">Confirm</button>
         </div>
+      </div>
+    </div>
+
+    <div id="loadingModal" style="display: none">
+      <div class="loading-backdrop">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading, please wait...</div>
       </div>
     </div>
 

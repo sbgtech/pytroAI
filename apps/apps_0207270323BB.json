@@ -1,0 +1,245 @@
+{
+  "mac": "02:07:27:03:23:BB",
+  "apps": [
+    {
+      "PYTRO_MCU_LOG": {
+        "NAME": "",
+        "PYTRO_MCU_LOG_ENABLE": "OFF"
+      }
+    },
+    {
+      "PYTRO_CELL": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_CELL_APN": "teal",
+        "PYTRO_CELL_ENABLE": "OFF",
+        "PYTRO_CELL_HIGH_WORD_FIRST": "ON",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TCP": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_TCP_DNS": "8.8.8.8",
+        "PYTRO_TCP_ENABLE": "OFF",
+        "PYTRO_TCP_GATEWAY": "192.168.10.1",
+        "PYTRO_TCP_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_TCP_MODBUS_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_TCP_MODBUS_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_TCP_MODBUS_PORT": "503",
+        "PYTRO_TCP_MODBUS_SLAVEID": "1",
+        "PYTRO_TCP_SUBNET_MASK": "255.255.255.0",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4851": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS4851_BAUDRATE": "9900",
+        "PYTRO_MBRTU_RS4851_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS4851_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_MBRTU_RS4851_MODE": [
+          "MASTER",
+          "SLAVE"
+        ],
+        "PYTRO_MBRTU_RS4851_SLAVEID": "2",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS4852": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS4852_BAUDRATE": "9600",
+        "PYTRO_MBRTU_RS4852_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS4852_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MBRTU_RS4852_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_MBRTU_RS4852_SLAVEID": "1",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MBRTU_RS232": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MBRTU_RS232_BAUDRATE": "9600",
+        "PYTRO_MBRTU_RS232_ENABLE": "OFF",
+        "PYTRO_MBRTU_RS232_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MBRTU_RS232_MODE": [
+          "SLAVE",
+          "MASTER"
+        ],
+        "PYTRO_MBRTU_RS232_SLAVEID": "1",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_RADIO": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_RADIO_ADDRESS": "B105",
+        "PYTRO_RADIO_ENABLE": "OFF",
+        "PYTRO_RADIO_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_RADIO_MODE": [
+          "P2P_MASTER",
+          "P2P_SLAVE",
+          "MESH_SLAVE",
+          "MESH_MASTER"
+        ],
+        "PYTRO_RADIO_SLAVE_ID": "B103",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_BLE": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PYTRO_BLE_ENABLE": "OFF",
+        "PYTRO_BLE_PIN": "110011",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_DMM": {
+        "CATEGORY": "Modbus RTU",
+        "DESCRIPTION": "Modbus RTU Master For Dynagen Controllers Using RS485 Port.",
+        "NAME": "DYNAGEN MODBUS MASTER",
+        "PUBLISHER": "",
+        "PYTRO_DMM_CELL_APN": "internet.ooredoo.com",
+        "PYTRO_DMM_CELL_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_DMM_ENABLE": "ON",
+        "PYTRO_DMM_EVENTDICT": {
+          "130": {
+            "1": {
+              "ACTION": "PUSH",
+              "CURRENT_VAL": "NEW1",
+              "EVENT": "RISING_EDGE",
+              "PREV_VAL": "PREV1",
+              "UPDATE_REG": "UPDREG1",
+              "UPDATE_VAL": "UPDVAL1"
+            }
+          },
+          "133": {
+            "1": {
+              "ACTION": "PUSH",
+              "CURRENT_VAL": "NEW2",
+              "EVENT": "EQUAL",
+              "PREV_VAL": "PREV2",
+              "UPDATE_REG": "UPDREG2",
+              "UPDATE_VAL": "UPDVAL2"
+            },
+            "2": {
+              "ACTION": "UPDATE_PUSH",
+              "CURRENT_VAL": "23",
+              "EVENT": "LOWER",
+              "PREV_VAL": "N/A",
+              "UPDATE_REG": "66",
+              "UPDATE_VAL": "77"
+            }
+          }
+        },
+        "PYTRO_DMM_HARDWARE": [
+          "CELL",
+          "RS485"
+        ],
+        "PYTRO_DMM_REGDICT": {
+          "1": {
+            "FORMAT": "UInt16",
+            "NUMREG": "95",
+            "OFFSET": "129"
+          },
+          "2": {
+            "FORMAT": "UInt32",
+            "NUMREG": "20",
+            "OFFSET": "224"
+          }
+        },
+        "PYTRO_DMM_RS485_BAUDRATE": "9500",
+        "PYTRO_DMM_RS485_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_DMM_RS485_SLAVEID": "11",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_WPRM": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_WPRM_ADDRESS": "B103",
+        "PYTRO_WPRM_CHANNEL": "41",
+        "PYTRO_WPRM_ENABLE": "OFF",
+        "PYTRO_WPRM_HARDWARE": [
+          "CELL",
+          "RADIO",
+          "RS485"
+        ],
+        "PYTRO_WPRM_NUMREG": "28",
+        "PYTRO_WPRM_OFFSET": "600",
+        "PYTRO_WPRM_POLLRATE": "30",
+        "PYTRO_WPRM_SLAVE_ID": "B199",
+        "SIZE": "",
+        "PYTRO_WPRM_CELL_APN": "internet.ooredoo.com",
+        "PYTRO_WPRM_CELL_HIGH_WORD_FIRST": "ON"
+      }
+    },
+    {
+      "PYTRO_WPRS": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_WPRS_ADDRESS": "B102",
+        "PYTRO_WPRS_CHANNEL": "41",
+        "PYTRO_WPRS_ENABLE": "OFF",
+        "PYTRO_WPRS_HARDWARE": [
+          "RADIO",
+          "RS485"
+        ],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_WDFRM": {
+        "CATEGORY": "",
+        "DESCRIPTION": "",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_WDFRM_ADDRESS": "",
+        "PYTRO_WDFRM_CHANNEL": "",
+        "PYTRO_WDFRM_ENABLE": "",
+        "PYTRO_WDFRM_HARDWARE": [
+          "RADIO",
+          "CELL",
+          "RS485"
+        ],
+        "PYTRO_WDFRM_INJ_ID": "",
+        "PYTRO_WDFRM_NUMREG": "",
+        "PYTRO_WDFRM_SALES_ID": "",
+        "PYTRO_WDFRM_SLAVE_ID": "",
+        "SIZE": ""
+      }
+    }
+  ],
+  "unitId": "0207270323BB",
+  "board": "RECON CONTROLLER V2"
+}

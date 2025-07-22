@@ -428,12 +428,15 @@ nav .menu-items li.active a i {
 #editAppsModalContent {
   background-color: white;
   border-radius: 8px;
-  max-width: 40%;
+  max-width: 70%;
   width: 100%;
   text-align: center;
   position: relative; /* For positioning the close icon */
+  height: auto;
   max-height: 88%;
-  /* overflow-y: scroll; */
+}
+#editAppContainer {
+  height: 100%;
 }
 .editAppTitleContainer {
   background-color: #000000;
@@ -444,6 +447,8 @@ nav .menu-items li.active a i {
 }
 .editAppContentContainer {
   padding: 20px;
+  max-height: calc(100vh - 150px);
+  overflow-y: scroll;
 }
 .app-key-highlight {
   font-size: 20px;
@@ -535,12 +540,57 @@ nav .menu-items li.active a i {
 .flex-35 {
   flex: 0 0 35%;
 }
+.flex-32 {
+  flex: 0 0 32%;
+}
 .flex-30 {
   flex: 0 0 30%;
 }
 .flex-25 {
   flex: 0 0 25%;
 }
+.flex-24 {
+  flex: 0 0 24%;
+}
 .flex-15 {
   flex: 0 0 15%;
+}
+.flex-14 {
+  flex: 0 0 14%;
+}
+
+.loading-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #ccc;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 16px;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

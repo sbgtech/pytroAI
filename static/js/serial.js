@@ -25,7 +25,42 @@ let historyIndex = -1; // Current index for history navigation
 let isFlashChecked = false; // variable that controls the state of flash (true or false)
 
 let renamed_board_name = "";
+let renamed_mac_address = "";
+let renamed_mac_address_unitId = "";
 let isDeviceConnected = false;
+
+// async function fetchStateAndApply(isAll) {
+//   const res = await fetch("/get_state");
+//   const data = await res.json();
+//   const enabled = data.enabled === 1;
+//   if (isAll === 1) {
+//     const buttons = document.querySelectorAll("button");
+//     const listItems = document.querySelectorAll("li");
+//     buttons.forEach((button) => {
+//       button.disabled = !enabled;
+//     });
+//     listItems.forEach((li) => {
+//       li.style.pointerEvents = enabled ? "auto" : "none";
+//       li.style.opacity = enabled ? "1" : "0.5";
+//     });
+//   } else {
+//     document.getElementById("serialMonitorBtn").disabled = !enabled;
+//     document.getElementById("firstLi").style.pointerEvents = enabled
+//       ? "auto"
+//       : "none";
+//     document.getElementById("firstLi").style.opacity = enabled ? "1" : "0.5";
+//   }
+// }
+
+// async function toggleState(newState, isAll) {
+//   await fetch("/set_state", {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ enabled: newState, isAll: isAll }),
+//   });
+
+//   fetchStateAndApply(isAll); // Reapply new state
+// }
 
 /* verify ifrxist a username params in the url */
 window.onload = function () {
@@ -34,7 +69,6 @@ window.onload = function () {
   // console.log(username);
   // Get the Send button element
   const sendButton = document.querySelector('button[type="submit"]');
-
   // Check if the username exists
   if (username && username !== "null") {
     // Enable the button if username exists
@@ -44,6 +78,7 @@ window.onload = function () {
     sendButton.disabled = true;
     alert("Username is missing in the URL.");
   }
+  // fetchStateAndApply();
 };
 
 async function resetDFUProcess() {
@@ -111,6 +146,19 @@ async function fileSystem() {
   }
 }
 
+function flattenObject(obj, parentKey = "", result = {}) {
+  for (let key in obj) {
+    if (!obj.hasOwnProperty(key)) continue;
+    const newKey = parentKey ? `${parentKey}.${key}` : key;
+    if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+      flattenObject(obj[key], newKey, result); // Recursively flatten
+    } else {
+      result[newKey] = obj[key];
+    }
+  }
+  return result;
+}
+
 function uploadToForm() {
   // Create a file input element dynamically
   const fileInput = document.createElement("input");
@@ -129,7 +177,8 @@ function uploadToForm() {
         const reader = new FileReader();
         // Asynchronously handle the file reading and populating the form
         reader.onload = async (fileEvent) => {
-          const jsonData = JSON.parse(fileEvent.target.result);
+          const rawData = JSON.parse(fileEvent.target.result);
+          const jsonData = flattenObject(rawData); // Flatten the JSON structure
           /* get all ids and values for the existing inputs */
           const form = document.getElementById("dynamicConfigForm");
           const inputs = form.querySelectorAll("input, select");
@@ -140,7 +189,13 @@ function uploadToForm() {
             if (input.type === "checkbox") {
               input.checked = value === "ON";
             } else if (input.tagName === "SELECT") {
-              if (Array.isArray(value)) {
+              if (
+                /\.EVENT$/.test(input.id) ||
+                /\.ACTION$/.test(input.id) ||
+                /\.FORMAT$/.test(input.id)
+              ) {
+                input.value = value;
+              } else if (Array.isArray(value)) {
                 const firstValue = value[0];
                 Array.from(input.options).forEach((option) => {
                   option.selected = option.value === firstValue;
@@ -171,28 +226,82 @@ function saveDataToJSON() {
   const form = document.getElementById("dynamicConfigForm");
   const inputs = form.querySelectorAll("input, select");
   const inputDetails = {};
+  const regDictBlocks = {};
+  const eventDictBlocks = {};
+  // Step 1: Extract all input values
   inputs.forEach((input) => {
     const id = input.id;
+    let value;
     if (input.type === "checkbox") {
-      inputDetails[id] = input.checked ? "ON" : "OFF";
+      value = input.checked ? "ON" : "OFF";
     } else if (input.tagName === "SELECT") {
-      // For select elements, get all options
-      const options = Array.from(input.options);
-      const selectedValue = input.value; // Get the selected value
-      const optionValues = [
-        selectedValue,
-        ...options
-          .filter((option) => option.value !== selectedValue)
-          .map((option) => option.value),
-      ];
-      inputDetails[id] = optionValues; // Store all options with the selected one first
+      if (
+        /\.EVENT$/.test(input.id) ||
+        /\.ACTION$/.test(input.id) ||
+        /\.FORMAT$/.test(input.id)
+      ) {
+        value = input.value;
+      } else {
+        const options = Array.from(input.options);
+        const selectedValue = input.value; // Get the selected value
+        const optionValues = [
+          selectedValue,
+          ...options
+            .filter((option) => option.value !== selectedValue)
+            .map((option) => option.value),
+        ];
+        value = optionValues; // Store all options with the selected one first
+      }
     } else {
-      const value = input.value;
-      inputDetails[id] = value;
+      value = input.value;
     }
+    inputDetails[id] = value;
   });
+  // Step 2: Process REGDICT
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_DMM_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockKey = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "FORMAT"
+
+      if (!regDictBlocks[blockKey]) {
+        regDictBlocks[blockKey] = {};
+      }
+      regDictBlocks[blockKey][subKey] = inputDetails[key];
+
+      delete inputDetails[key]; // Remove flattened key
+    }
+  }
+  // Step 3: Collect EVENTDICT
+  for (let key in inputDetails) {
+    // Match pattern like PYTRO_DMM_EVENTDICT.130.EVENT
+    const match = key.match(
+      /^PYTRO_DMM_EVENTDICT\.(\d+)\.(\d+)\.(EVENT|PREV_VAL|CURRENT_VAL|UPDATE_REG|UPDATE_VAL|ACTION)$/
+    );
+    if (match) {
+      const offset = match[1];
+      const index = match[2];
+      const field = match[3];
+      if (!eventDictBlocks[offset]) {
+        eventDictBlocks[offset] = {};
+      }
+      if (!eventDictBlocks[offset][index]) {
+        eventDictBlocks[offset][index] = {};
+      }
+
+      eventDictBlocks[offset][index][field] = inputDetails[key];
+      delete inputDetails[key];
+    }
+  }
+  // Step 4: Assemble the final structure
+  const finalConfig = {
+    ...inputDetails,
+    PYTRO_DMM_EVENTDICT: eventDictBlocks,
+    PYTRO_DMM_REGDICT: regDictBlocks,
+  };
+  // Step 5: Export JSON
   // Convert the data object into a JSON string
-  const jsonData = JSON.stringify(inputDetails, null, 2);
+  const jsonData = JSON.stringify(finalConfig, null, 2);
   // Create a Blob object with the JSON string
   const blob = new Blob([jsonData], { type: "application/json" });
   // Create a link element to trigger the download
@@ -207,6 +316,7 @@ function saveDataToJSON() {
 
 async function configForm() {
   try {
+    showLoading();
     document.getElementById("configFormDataContainer").style.display = "none";
     document.querySelectorAll(".loadMessageContainer").forEach((button) => {
       button.style.display = "flex";
@@ -215,16 +325,14 @@ async function configForm() {
       button.style.display = "none";
     });
     document.querySelectorAll(".loadMessageText").forEach((text) => {
-      text.textContent = "Loading...";
+      text.textContent = "";
     });
     setTimeout(() => {
       if (isDeviceConnected) {
-        document.querySelectorAll(".loadMessageText").forEach((text) => {
-          text.textContent = "";
-        });
         document.querySelectorAll(".loadMessageContainer").forEach((button) => {
           button.style.display = "none";
         });
+        // hideLoading();
       } else {
         document.querySelectorAll(".loadMessageText").forEach((text) => {
           text.textContent =
@@ -233,8 +341,9 @@ async function configForm() {
         document.querySelectorAll(".reconnect-btn").forEach((button) => {
           button.style.display = "block";
         });
+        hideLoading();
       }
-    }, 2000);
+    }, 1000);
     Filecheck = true;
     await SerialWrite(
       `\x03\r\nprint(f"<>{machine.board_name()}<>")\r\nimport os\r\nprint('CONFIG1' if 'config.py' in os.listdir() else 'CONFIG0')\r\n`
@@ -253,16 +362,21 @@ function reconnectAndReloadConfig() {
 }
 
 async function applyConfig(event) {
-  event.preventDefault(); // Prevent the form from submitting and the page from refreshing
-  /* get all ids and values for the existing inputs */
+  event.preventDefault();
   const form = document.getElementById("dynamicConfigForm");
   const inputs = form.querySelectorAll("input, select");
   const inputDetails = {};
   inputs.forEach((input) => {
     const id = input.id;
+    let value;
     if (input.type === "checkbox") {
-      inputDetails[id] = input.checked ? "ON" : "OFF";
-    } else if (input.tagName === "SELECT") {
+      value = input.checked ? "ON" : "OFF";
+    } else if (
+      input.tagName === "SELECT" &&
+      !/\.EVENT$/.test(input.id) &&
+      !/\.ACTION$/.test(input.id) &&
+      !/\.FORMAT$/.test(input.id)
+    ) {
       // For select elements, get all options
       const options = Array.from(input.options);
       const selectedValue = input.value; // Get the selected value
@@ -272,39 +386,95 @@ async function applyConfig(event) {
           .filter((option) => option.value !== selectedValue)
           .map((option) => option.value),
       ];
-      inputDetails[id] = optionValues; // Store all options with the selected one first
+      value = optionValues; // Store all options with the selected one first
     } else {
-      const value = input.value;
-      inputDetails[id] = value;
+      value = input.value;
     }
+    inputDetails[id] = value;
   });
-  console.log("first ", inputDetails);
+  const regDictBlocks = {};
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_DMM_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockNumber = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "FORMAT"
 
-  // Convert data into the desired format
-  let formattedData = "";
-  for (let [key, value] of Object.entries(inputDetails)) {
-    if (typeof value === "object") {
-      const arrayString = JSON.stringify(value).replace(/"/g, "'");
-      formattedData += `${key} = ${arrayString}\\r\\n`;
-    } else if (value.trim() === "") {
-      formattedData += `${key} = ''\\r\\n`;
-    } else {
-      formattedData += `${key} = '${value}'\\r\\n`;
+      if (!regDictBlocks[blockNumber]) {
+        regDictBlocks[blockNumber] = {}; // Initialize the block if it doesn't exist
+      }
+
+      regDictBlocks[blockNumber][subKey] = inputDetails[key]; // Add the subkey and value to the block
+
+      // Remove the flattened key from inputDetails
+      delete inputDetails[key];
     }
   }
 
-  // Log the formatted data
-  console.log(formattedData);
-  await StopScript();
-  await sleep(100);
-  try {
-    await SerialWrite(
-      `import os\r\nos.remove('config.py')\r\nf=open('config.py','w')\r\nf.write('''${formattedData}''')\r\nf.close()\r\n`
+  // Step 3: Extract EVENTDICT blocks with editable offsets
+  const rawEventDict = {};
+
+  for (let key in inputDetails) {
+    const match = key.match(
+      /^PYTRO_DMM_EVENTDICT\.(\d+)\.(\d+)\.(EVENT|PREV_VAL|CURRENT_VAL|UPDATE_REG|UPDATE_VAL|ACTION|OFFSET)$/
     );
-  } catch (err) {
-    console.error("Error updating config.py:", err);
+    if (match) {
+      const originalOffset = match[1];
+      const conditionIndex = match[2];
+      const field = match[3];
+
+      if (!rawEventDict[originalOffset]) {
+        rawEventDict[originalOffset] = {};
+      }
+      if (!rawEventDict[originalOffset][conditionIndex]) {
+        rawEventDict[originalOffset][conditionIndex] = {};
+      }
+
+      rawEventDict[originalOffset][conditionIndex][field] = inputDetails[key];
+      delete inputDetails[key];
+    }
   }
-  await configForm();
+
+  // Step 4: Flatten and reassign to new offsets
+  const mergedEventDictBlocks = {};
+
+  for (const offset in rawEventDict) {
+    for (const conditionIndex in rawEventDict[offset]) {
+      const condition = rawEventDict[offset][conditionIndex];
+      const newOffset = condition["OFFSET"] || offset;
+
+      delete condition["OFFSET"]; // Clean out OFFSET field
+
+      if (!mergedEventDictBlocks[newOffset]) {
+        mergedEventDictBlocks[newOffset] = [];
+      }
+
+      mergedEventDictBlocks[newOffset].push(condition);
+    }
+  }
+
+  // Step 5: Reindex conditions per offset
+  const eventDictBlocks = {};
+  for (const offset in mergedEventDictBlocks) {
+    const conditions = mergedEventDictBlocks[offset];
+    eventDictBlocks[offset] = {};
+
+    conditions.forEach((condition, index) => {
+      eventDictBlocks[offset][String(index + 1)] = condition;
+    });
+  }
+
+  // Step 6: Merge into final config object
+  if (Object.keys(regDictBlocks).length > 0) {
+    inputDetails["PYTRO_DMM_REGDICT"] = regDictBlocks; // Keep as an object, not a string
+  }
+
+  if (Object.keys(eventDictBlocks).length > 0) {
+    inputDetails["PYTRO_DMM_EVENTDICT"] = eventDictBlocks;
+  }
+
+  // Log the final inputDetails to verify
+  console.log("Final inputDetails:", inputDetails);
+  saveToConfigFile(inputDetails);
   document.getElementById("popup").textContent = "Form Saved Successfully";
   showPopup("#208f5b");
 }
@@ -317,86 +487,294 @@ function generateForm(config) {
   const form = document.getElementById("dynamicConfigForm");
   form.innerHTML = "";
 
+  // This object will hold groups of keys by their prefix
+  const groupedConfig = {};
+
+  // Step 1: Group keys by their prefix
   for (const [key, value] of Object.entries(config)) {
-    // create the row tag
-    const row = document.createElement("div");
-    row.classList.add("row", "align-items-center", "mb-4");
-
-    // create col div for each label & input
-    const labelCol = document.createElement("div");
-    labelCol.classList.add("col-12", "col-sm-6", "col-md-4");
-    const inputCol = document.createElement("div");
-    inputCol.classList.add("col-12", "col-sm-6", "col-md-4");
-
-    const label = document.createElement("label");
-    const labelName = key.replaceAll("_", " ");
-    label.setAttribute("for", key);
-    label.textContent = labelName;
-    if (value === "ON" || value === "OFF") {
-      inputCol.classList.add("form-switch");
-      // formGroup.style.paddingLeft = "0px";
-      // label.style.flex = "0 0 55%";
-    }
-    // label.style.flex = "0 0 50%";
-    labelCol.appendChild(label);
-
-    if (Array.isArray(value)) {
-      // Generate select input if value is an array
-      const select = document.createElement("select");
-      select.setAttribute("id", key);
-      select.setAttribute("name", key);
-      select.classList.add("form-select");
-      value.forEach((optionValue) => {
-        const option = document.createElement("option");
-        option.value = optionValue;
-        option.textContent = optionValue;
-        select.appendChild(option);
-      });
-      inputCol.appendChild(select);
-    } else if (value === "ON" || value === "OFF") {
-      // Generate checkbox if value is ON/OFF
-      const checkbox = document.createElement("input");
-      checkbox.setAttribute("type", "checkbox");
-      checkbox.setAttribute("id", key);
-      checkbox.setAttribute("name", key);
-      checkbox.classList.add("form-check-input");
-      checkbox.style.width = "32px";
-      checkbox.style.height = "16px";
-      checkbox.style.marginLeft = "-20px";
-      if (value === "ON") {
-        checkbox.setAttribute("checked", "checked");
-      }
-      inputCol.appendChild(checkbox);
+    const parts = key.split("_");
+    if (parts.includes("MBRTU")) {
+      // Take first 3 parts for MBRTU (e.g., PYTRO_MBRTU_RS4851)
+      prefix = parts.slice(0, 3).join("_");
     } else {
-      // Generate text input for other types
-      const input = document.createElement("input");
-      input.setAttribute("type", "text");
-      input.setAttribute("id", key);
-      input.setAttribute("name", key);
-      input.setAttribute("value", value);
-      input.classList.add("form-control");
-      inputCol.appendChild(input);
+      // Take first 2 parts for others (e.g., PYTRO_CELL)
+      prefix = parts.slice(0, 2).join("_");
     }
-    row.appendChild(labelCol);
-    row.appendChild(inputCol);
-    form.appendChild(row);
+    if (!groupedConfig[prefix]) {
+      groupedConfig[prefix] = [];
+    }
+    groupedConfig[prefix].push([key, value]);
   }
 
-  // Add submit button
-  // const buttonRow = document.createElement("div");
-  // buttonRow.classList.add(
-  //   "d-flex",
-  //   "align-items-center",
-  //   "justify-content-end"
-  // );
-  // const submitButton = document.createElement("button");
-  // submitButton.setAttribute("type", "button");
-  // submitButton.textContent = "Apply";
-  // submitButton.setAttribute("onclick", "applyConfig(event)");
-  // submitButton.classList.add("btn", "btn-dark");
-  // submitButton.style.width = "10%";
-  // buttonRow.appendChild(submitButton);
-  // form.appendChild(buttonRow);
+  // Step 2: Iterate over each group and create a container
+  for (const [prefix, items] of Object.entries(groupedConfig)) {
+    // Create a container for this group
+    const groupContainer = document.createElement("div");
+    groupContainer.classList.add("card", "mb-4");
+
+    // Group header (e.g., "PYTRO_CELL" as the title)
+    const groupHeader = document.createElement("div");
+    groupHeader.classList.add("card-header", "fw-bold", "bg-light");
+    groupHeader.textContent = prefix.replaceAll("_", " ");
+    groupContainer.appendChild(groupHeader);
+
+    const groupBody = document.createElement("div");
+    groupBody.classList.add("card-body");
+
+    // Step 3: Add all key-value pairs in this group to the container
+    items.forEach(([key, value]) => {
+      if (key !== `${prefix}_HARDWARE`) {
+        // create the row tag
+        const row = document.createElement("div");
+        row.classList.add("row", "align-items-center", "mb-4");
+
+        // create col div for each label & input
+        const labelCol = document.createElement("div");
+        labelCol.classList.add("col-12", "col-sm-6", "col-md-4", "flex-25");
+        const inputCol = document.createElement("div");
+        key === "PYTRO_DMM_EVENTDICT"
+          ? inputCol.classList.add("col-12", "col-md-12", "col-lg-8")
+          : key === "PYTRO_DMM_REGDICT"
+          ? inputCol.classList.add("col-12", "col-md-12", "col-lg-5")
+          : inputCol.classList.add("col-12", "col-md-12", "col-lg-4");
+
+        const label = document.createElement("label");
+        const labelName = key.replaceAll("_", " ");
+        label.setAttribute("for", key);
+        label.textContent = labelName;
+        if (value === "ON" || value === "OFF") {
+          inputCol.classList.add("form-switch");
+        }
+        labelCol.appendChild(label);
+
+        if (Array.isArray(value)) {
+          // Generate select input if value is an array
+          const select = document.createElement("select");
+          select.setAttribute("id", key);
+          select.setAttribute("name", key);
+          select.classList.add("form-select");
+          value.forEach((optionValue) => {
+            const option = document.createElement("option");
+            option.value = optionValue;
+            option.textContent = optionValue;
+            select.appendChild(option);
+          });
+          inputCol.appendChild(select);
+        } else if (value === "ON" || value === "OFF") {
+          // Generate checkbox if value is ON/OFF
+          const checkbox = document.createElement("input");
+          checkbox.setAttribute("type", "checkbox");
+          checkbox.setAttribute("id", key);
+          checkbox.setAttribute("name", key);
+          checkbox.classList.add("form-check-input");
+          checkbox.style.width = "32px";
+          checkbox.style.height = "16px";
+          checkbox.style.marginLeft = "-20px";
+          if (value === "ON") {
+            checkbox.setAttribute("checked", "checked");
+          }
+          inputCol.appendChild(checkbox);
+        } else if (typeof value === "object" && value !== null) {
+          // Handle dictionary object
+          const fieldset = document.createElement("fieldset");
+          fieldset.classList.add("form-control", "p-2");
+
+          if (key === "PYTRO_DMM_REGDICT") {
+            for (const [subKey, subValue] of Object.entries(value)) {
+              const subFieldset = document.createElement("fieldset");
+              subFieldset.classList.add("form-group", "p-2");
+              const subLabelContainer = document.createElement("div");
+              const subInputsContainer = document.createElement("div");
+              subInputsContainer.classList.add(
+                "d-flex",
+                "justify-content-between"
+              );
+              const subLabel = document.createElement("label");
+              subLabel.setAttribute("for", `${key}.${subKey}`);
+              subLabel.textContent = `Block ${subKey}`;
+              subLabel.classList.add("form-label", "mt-2", "fw-bold");
+              subLabelContainer.appendChild(subLabel);
+              subFieldset.appendChild(subLabelContainer);
+
+              for (const [fieldKey, fieldValue] of Object.entries(subValue)) {
+                const fieldRow = document.createElement("div");
+                fieldRow.classList.add("flex-32");
+                const fieldLabelCol = document.createElement("div");
+                const fieldInputCol = document.createElement("div");
+                const fieldLabel = document.createElement("label");
+                fieldLabel.textContent = fieldKey;
+                fieldLabel.setAttribute("for", `${key}.${subKey}.${fieldKey}`);
+                fieldLabelCol.appendChild(fieldLabel);
+
+                let input;
+                if (fieldKey === "FORMAT") {
+                  input = document.createElement("select");
+                  input.setAttribute("id", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("name", `${key}.${subKey}.${fieldKey}`);
+                  input.classList.add("form-select");
+                  const options = ["UInt16", "UInt32", "Float"];
+                  options.forEach((opt) => {
+                    const option = document.createElement("option");
+                    option.value = opt;
+                    option.textContent = opt;
+                    if (opt === fieldValue) {
+                      option.selected = true;
+                    }
+                    input.appendChild(option);
+                  });
+                } else {
+                  input = document.createElement("input");
+                  input.setAttribute("type", "text");
+                  input.setAttribute("id", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("name", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("value", fieldValue);
+                  input.classList.add("form-control");
+                }
+                fieldInputCol.appendChild(input);
+                fieldRow.appendChild(fieldLabelCol);
+                fieldRow.appendChild(fieldInputCol);
+                subInputsContainer.appendChild(fieldRow);
+              }
+              subFieldset.appendChild(subInputsContainer);
+              fieldset.appendChild(subFieldset);
+            }
+          } else {
+            for (const [offsetKey, conditionDict] of Object.entries(value)) {
+              for (const [conditionIndex, eventFields] of Object.entries(
+                conditionDict
+              )) {
+                if (isNaN(conditionIndex)) continue; // skip non-numeric (invalid) keys
+
+                const conditionRow = document.createElement("div");
+                conditionRow.classList.add(
+                  "form-group",
+                  "p-2",
+                  "d-flex",
+                  "justify-content-between",
+                  "align-items-start"
+                );
+
+                // OFFSET input (this row's offset value)
+                const offsetInputWrapper = document.createElement("div");
+                offsetInputWrapper.classList.add("flex-14");
+
+                const offsetLabel = document.createElement("label");
+                offsetLabel.textContent = "OFFSET";
+                offsetLabel.setAttribute("for", `${key}.${offsetKey}`);
+                const offsetInput = document.createElement("input");
+                offsetInput.setAttribute("type", "text");
+                offsetInput.setAttribute(
+                  "id",
+                  `PYTRO_DMM_EVENTDICT.${offsetKey}.${conditionIndex}.OFFSET`
+                );
+                offsetInput.setAttribute(
+                  "name",
+                  `PYTRO_DMM_EVENTDICT.${offsetKey}.${conditionIndex}.OFFSET`
+                );
+                offsetInput.classList.add("form-control", "event-index-input");
+                offsetInput.setAttribute("value", offsetKey);
+
+                offsetInputWrapper.appendChild(offsetLabel);
+                offsetInputWrapper.appendChild(offsetInput);
+                conditionRow.appendChild(offsetInputWrapper);
+
+                // Event fields in order
+                const fieldOrder = [
+                  "EVENT",
+                  "PREV_VAL",
+                  "CURRENT_VAL",
+                  "UPDATE_REG",
+                  "UPDATE_VAL",
+                  "ACTION",
+                ];
+                fieldOrder.forEach((fieldKey) => {
+                  const fieldValue = eventFields[fieldKey] ?? "";
+
+                  const fieldWrapper = document.createElement("div");
+                  fieldWrapper.classList.add("flex-14");
+
+                  const label = document.createElement("label");
+                  label.textContent = fieldKey;
+                  label.setAttribute(
+                    "for",
+                    `${key}.${offsetKey}.${conditionIndex}.${fieldKey}`
+                  );
+
+                  let input;
+                  if (fieldKey === "EVENT" || fieldKey === "ACTION") {
+                    input = document.createElement("select");
+                    input.classList.add("form-select");
+
+                    const options =
+                      fieldKey === "EVENT"
+                        ? [
+                            "RISING_EDGE",
+                            "FALLING_EDGE",
+                            "EQUAL",
+                            "ONCHANGE",
+                            "HIGHER",
+                            "HIGHEREQ",
+                            "LOWER",
+                            "LOWEREQ",
+                          ]
+                        : ["PUSH", "UPDATE_PUSH", "TEST"];
+
+                    options.forEach((opt) => {
+                      const option = document.createElement("option");
+                      option.value = opt;
+                      option.textContent = opt;
+                      if (opt === fieldValue) {
+                        option.selected = true;
+                      }
+                      input.appendChild(option);
+                    });
+                  } else {
+                    input = document.createElement("input");
+                    input.setAttribute("type", "text");
+                    input.classList.add("form-control");
+                    input.setAttribute("value", fieldValue);
+                  }
+
+                  input.setAttribute(
+                    "name",
+                    `${key}.${offsetKey}.${conditionIndex}.${fieldKey}`
+                  );
+                  input.setAttribute(
+                    "id",
+                    `${key}.${offsetKey}.${conditionIndex}.${fieldKey}`
+                  );
+                  input.classList.add("event-field");
+
+                  fieldWrapper.appendChild(label);
+                  fieldWrapper.appendChild(input);
+                  conditionRow.appendChild(fieldWrapper);
+                });
+
+                // Append full condition row
+                fieldset.appendChild(conditionRow);
+              }
+            }
+          }
+
+          inputCol.appendChild(fieldset);
+        } else {
+          // Generate text input for other types
+          const input = document.createElement("input");
+          input.setAttribute("type", "text");
+          input.setAttribute("id", key);
+          input.setAttribute("name", key);
+          input.setAttribute("value", value);
+          input.classList.add("form-control");
+          inputCol.appendChild(input);
+        }
+        row.appendChild(labelCol);
+        row.appendChild(inputCol);
+        groupBody.appendChild(row);
+      }
+    });
+    groupContainer.appendChild(groupBody);
+    form.appendChild(groupContainer);
+  }
 }
 
 function displayNewFieldModal() {
@@ -725,63 +1103,15 @@ function getSizeOfKey(key) {
   }
 }
 
-// let previousParsedData = {};
+function showLoading() {
+  console.log("Show loading modal...");
+  document.getElementById("loadingModal").style.display = "block";
+}
 
-// Function to parse data between <CLEAR> and <END>
-// function parseDataBlock(rawData) {
-//   const regex =
-//     /<CLEAR>[\s\S]*?===============================([\s\S]*?)===============================/;
-//   const match = rawData.match(regex);
-
-//   if (!match) {
-//     console.log("No valid <CLEAR> data block found.");
-//     return null;
-//   }
-
-//   const block = match[1].trim();
-//   const lines = block
-//     .split("\n")
-//     .map((line) => line.trim())
-//     .filter((line) => line);
-
-//   const parsed = {};
-
-//   lines.forEach((line) => {
-//     const [label, value] = line.split(/\s{2,}/); // Split on 2+ spaces
-//     if (label && value) {
-//       parsed[label] = value;
-//     }
-//   });
-//   console.log(parsed);
-//   return parsed;
-// }
-
-// Function to simulate incoming data and update the parsed data
-// function updateParsedData(newRawData) {
-//   const newParsed = parseDataBlock(newRawData);
-//   if (!newParsed) return;
-//   let hasChanges = false;
-//   // Check for updated or new keys
-//   for (const [key, newValue] of Object.entries(newParsed)) {
-//     if (previousParsedData[key] !== newValue) {
-//       previousParsedData[key] = newValue;
-//       hasChanges = true;
-//     }
-//   }
-//   // Optionally, check for removed keys
-//   for (const key of Object.keys(previousParsedData)) {
-//     if (!(key in newParsed)) {
-//       delete previousParsedData[key];
-//       hasChanges = true;
-//     }
-//   }
-//   if (hasChanges) {
-//     console.log("🔄 Updated JSON:");
-//     console.log(JSON.stringify(previousParsedData, null, 2));
-//   } else {
-//     console.log("✅ No changes detected.");
-//   }
-// }
+function hideLoading() {
+  console.log("Hide loading modal...");
+  document.getElementById("loadingModal").style.display = "none";
+}
 
 async function SerialMonitor() {
   try {
@@ -806,7 +1136,9 @@ async function SerialMonitor() {
     }
 
     await StopScript();
-    await SerialWrite(`\x03\r\nprint(f"<>{machine.board_name()}<>")\r\n`);
+    await SerialWrite(
+      `\x03\r\nimport ubinascii,network\r\na = ubinascii.hexlify(network.LAN().config('mac'), ':').decode().upper()\r\nprint(f"<>mac address : {a}<>")\r\nprint(f"<>board name : {machine.board_name()}<>")\r\n`
+    );
     await RunScript();
     // Set up a reader to continuously read from the serial port
     const decoder = new TextDecoder();
@@ -820,11 +1152,11 @@ async function SerialMonitor() {
         }
         if (value) {
           const Serialdata = decoder.decode(value);
-          console.log(
-            `Size of terminal: ${
-              new TextEncoder().encode(textArea.textContent).length
-            } bytes`
-          );
+          // console.log(
+          //   `Size of terminal: ${
+          //     new TextEncoder().encode(textArea.textContent).length
+          //   } bytes`
+          // );
           // Check if the text content size exceeds 100KB (102,400 bytes)
           if (new TextEncoder().encode(textArea.textContent).length > 102400) {
             console.log("Clearing terminal...");
@@ -849,55 +1181,66 @@ async function SerialMonitor() {
           }
           textArea.textContent += Serialdata;
           textArea.scrollTop = textArea.scrollHeight; // Auto-scroll to the bottom
-          // const clearmatch = textArea.textContent.match(/<CLEAR>/);
-          // if (clearmatch) {
-          // console.log("clear appeared");
-          // let content = textArea.textContent;
-          // content = updateParsedData(content);
-          // let existingLogs = localStorage.getItem("logs");
-          // if (existingLogs) {
-          //   existingLogs += "\n" + content;
-          // } else {
-          //   existingLogs = content;
-          // }
-          // localStorage.setItem("logs", existingLogs);
-          // const logsSize = getSizeOfKey("logs");
-          // console.log(`Size of 'logs' key: ${logsSize} MB`);
-          // setTimeout(() => {
-          //   clearTerminal();
-          // }, 900);
-          // }
-          //check board name
-          const namematch = textArea.textContent.match(/<>[A-Za-z][^<>]*<>/);
-          if (namematch) {
-            // Extract the matched portion and clean it up
-            // console.log("NAME EXTRACTED:", namematch[0].slice(2, -2));
-            const BOARD_Name = namematch[0].slice(2, -2);
-            renamed_board_name = BOARD_Name.replace(/ /g, "_");
-            setBoardName(renamed_board_name);
-            // Fetch product info from Flask
-            // fetch(`/api/product_info/${renamed}`)
-            //   .then((res) => res.json())
-            //   .then((data) => {
-            //     if (data.error) {
-            //       throw new Error(data.error);
-            //     }
-            //     // console.log(data);
-            //     // Set image
-            //     document.getElementById("boardImage").src = data.image;
-            //     // Load and insert table HTML
-            //     return fetch(data.table_url);
-            //   })
-            //   .then((res) => res.text())
-            //   .then((html) => {
-            //     document.getElementById("tableContainer").innerHTML = html;
-            //   })
-            //   .catch((err) => {
-            //     document.getElementById(
-            //       "tableContainer"
-            //     ).innerHTML = `<p style="color:red;">${err.message}</p>`;
-            //   });
+          const lines = textArea.textContent.split("\n");
+          for (const line of lines) {
+            if (!line.includes("print(")) {
+              const macMatch = line.match(/<>mac address\s*:\s*([^<>]+)\s*<>/);
+              if (macMatch) {
+                const mac_address = macMatch[1].trim();
+                renamed_mac_address = mac_address;
+                renamed_mac_address_unitId = mac_address
+                  .replace(/:/g, "")
+                  .toUpperCase();
+              }
+
+              const boardMatch = line.match(/<>board name\s*:\s*([^<>]+)\s*<>/);
+              if (boardMatch) {
+                const board_name = boardMatch[1].trim();
+                renamed_board_name = board_name;
+                setBoardName(renamed_board_name);
+              }
+            }
           }
+          //check board name
+          // const namematch = textArea.textContent.match(
+          //   /<>board name\s*:\s*([^<>]+)\s*<>/
+          // );
+          // const macAddressMatch = textArea.textContent.match(
+          //   /<>mac address\s*:\s*([0-9A-Fa-f:]{17})<>/
+          // );
+          // if (macAddressMatch) {
+          //   const mac_address = macAddressMatch[1];
+          //   renamed_mac_address = mac_address.replace(/:/g, "").toUpperCase();
+          //   console.log(renamed_mac_address);
+          // }
+          // if (namematch) {
+          //   // Extract the matched portion and clean it up
+          //   const board_name = namematch[1].trim();
+          //   renamed_board_name = board_name;
+          //   setBoardName(renamed_board_name);
+          // Fetch product info from Flask
+          // fetch(`/api/product_info/${renamed}`)
+          //   .then((res) => res.json())
+          //   .then((data) => {
+          //     if (data.error) {
+          //       throw new Error(data.error);
+          //     }
+          //     // console.log(data);
+          //     // Set image
+          //     document.getElementById("boardImage").src = data.image;
+          //     // Load and insert table HTML
+          //     return fetch(data.table_url);
+          //   })
+          //   .then((res) => res.text())
+          //   .then((html) => {
+          //     document.getElementById("tableContainer").innerHTML = html;
+          //   })
+          //   .catch((err) => {
+          //     document.getElementById(
+          //       "tableContainer"
+          //     ).innerHTML = `<p style="color:red;">${err.message}</p>`;
+          //   });
+          // }
           // Check flash status
           if (
             Serialdata.includes("VCPFLASH") ||
@@ -1013,7 +1356,7 @@ async function SerialMonitor() {
               const contentBetweenQuotes = match[0]; // Extract content between quotes
               // Check if the content matches the key-value pair pattern
               const pattern =
-                /(PYTRO_\w+)\s*=\s*(\d+|'[^']+'|\[\s*'[^']+'\s*(?:,\s*'[^']+'\s*)*\])\s*/g;
+                /(PYTRO_\w+)\s*=\s*(\d+|'[^']+'|\[\s*'[^']+'\s*(?:,\s*'[^']+'\s*)*\]|\{[\s\S]*?\})/g;
               const keyValueMatches = [
                 ...contentBetweenQuotes.matchAll(pattern),
               ];
@@ -1027,40 +1370,94 @@ async function SerialMonitor() {
                   if (key && value) {
                     // Clean up the key and value, and store them
                     const TreatedVal = value.replace(/^'(.*)'$/, "$1");
-                    if (TreatedVal[0] == "[") {
-                      configParameters[key] = JSON.parse(
-                        value
-                          .replace(/'/g, '"')
-                          .replace(/\s+/g, "")
-                          .replace(/,\]/g, "]")
+                    try {
+                      if (
+                        TreatedVal.startsWith("{") ||
+                        TreatedVal.startsWith("[")
+                      ) {
+                        // Replace all single quotes with double quotes ONLY if it's not already valid JSON
+                        const safeJson = TreatedVal.replace(/'/g, '"');
+                        configParameters[key] = JSON.parse(safeJson);
+                      } else {
+                        configParameters[key] = TreatedVal;
+                      }
+                    } catch (e) {
+                      console.error(
+                        `Error parsing key "${key}" with value:`,
+                        value,
+                        e
                       );
-                    } else {
                       configParameters[key] = TreatedVal;
                     }
                   }
                 });
                 console.log("DATA AFTER CLEANING:", configParameters);
-                fetch("/get-data")
+                // showLoading();
+                fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
                   .then((res) => res.json())
                   .then((data) => {
+                    // Apply configParameters to appData
+                    data.apps.forEach((appObj) => {
+                      const appKey = Object.keys(appObj)[0];
+                      const appData = appObj[appKey];
+
+                      for (const configKey in configParameters) {
+                        if (
+                          configParameters.hasOwnProperty(configKey) &&
+                          configKey.startsWith(appKey + "_")
+                        ) {
+                          appData[configKey] = configParameters[configKey];
+                        }
+                      }
+                    });
+
+                    // Send updated data to server
+                    return fetch("/update-apps", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        mac: renamed_mac_address,
+                        apps: data.apps,
+                        unitId: renamed_mac_address_unitId,
+                        board: renamed_board_name,
+                      }),
+                    });
+                  })
+                  .then((res) => res.json())
+                  .then((result) => {
+                    if (result.status === "success") {
+                      console.log(
+                        "Updated successfully, now fetching again..."
+                      );
+                      return fetch(
+                        `/get-data?macId=${renamed_mac_address_unitId}`
+                      ); // Only fetch again after successful update
+                    } else {
+                      throw new Error("Update failed: " + result.message);
+                    }
+                  })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    // ✅ Now handle rendering after fresh fetch
                     const storeContainer = document.getElementById(
                       "apps-store-container"
                     );
                     const installedContainer = document.getElementById(
                       "apps-installed-container"
                     );
-                    // Render board info
+
                     const boardInfo = `
-                        <h6>Board Name : <strong>${renamed_board_name}</strong></h6>
-                        <h6>Board ID : <strong>${data.UNITID}</strong></h6>
-                      `;
+                      <h6>Board Name : <strong>${renamed_board_name}</strong></h6>
+                      <h6>Board ID : <strong>${data.unitId}</strong></h6>
+                    `;
                     storeContainer.innerHTML = boardInfo;
                     installedContainer.innerHTML = boardInfo;
+
                     let rowsHTML = "";
                     data.apps.forEach((appObj) => {
-                      const appKey = Object.keys(appObj)[0]; // e.g., "PYTRO_CELL"
+                      const appKey = Object.keys(appObj)[0];
                       const appData = appObj[appKey];
-                      const name = appData.NAME || appKey;
+                      const name = appData.NAME || appKey.replaceAll("_", " ");
                       const description =
                         appData.DESCRIPTION || "Description Not Available";
                       const publisher =
@@ -1070,19 +1467,7 @@ async function SerialMonitor() {
                       const size = appData.SIZE
                         ? `${appData.SIZE} MB`
                         : "Size Not Available";
-                      // const is_enabled = appData[`${appKey}_ENABLE`];
                       const enableField = appKey + "_ENABLE";
-
-                      // Loop through configParameters keys and update appData if key matches
-                      for (const configKey in configParameters) {
-                        if (configParameters.hasOwnProperty(configKey)) {
-                          // If the config key starts with the appKey + "_" (like PYTRO_BLE_ENABLE)
-                          if (configKey.startsWith(appKey + "_")) {
-                            // Overwrite or add this key in appData
-                            appData[configKey] = configParameters[configKey];
-                          }
-                        }
-                      }
 
                       const appHTML = `
                         <div class="d-flex flex-column flex-md-row justify-content-md-between store-apps-border gap-3 gap-md-0">
@@ -1093,7 +1478,7 @@ async function SerialMonitor() {
                               </i>
                             </div>
                             <div>
-                              <h5>${appKey.replaceAll("_", " ")}</h5>
+                              <h5>${name}</h5>
                               <span>${description}</span>
                               <div class="d-flex flex-column flex-md-row gap-0 gap-md-5 mt-2">
                                 <span style="color: gray; font-size: 12px">${publisher}</span>
@@ -1112,17 +1497,17 @@ async function SerialMonitor() {
                               <i class="fa fa-download" aria-hidden="true"></i> Install
                             </button>`
                           }
-                            
+
                           </div>
                         </div>
                       `;
                       storeContainer.innerHTML += appHTML;
-
                       const icons = document.querySelectorAll(".terminal-icon");
                       icons.forEach(function (icon) {
                         icon.style.color = getRandomColor();
                       });
 
+                      // Installed apps table
                       if (
                         appData[enableField] &&
                         appData[enableField].toUpperCase() === "ON"
@@ -1135,69 +1520,50 @@ async function SerialMonitor() {
                             <td><span class="status-running">Running</span></td>
                             <td>
                               <div class="d-flex flex-column justify-content-center flex-md-row gap-2">
-                                <button class="btn btn-primary" onclick="editApp('${appKey}')"><i class="fa fa-pencil-square-o" aria-hidden="true"></i> Edit</button>
-                                <button class="btn btn-danger stop-app-button" onclick="stopApp('${appKey}')"><i class="fa fa-stop" aria-hidden="true"></i> Stop</button>
-                                <button class="btn btn-secondary" onclick="stopApp('${appKey}')"><i class="fa fa-trash" aria-hidden="true"></i> Uninstall</button>
+                                <button class="btn btn-primary" onclick="editApp('${appKey}')"><i class="fa fa-pencil-square-o"></i> Edit</button>
+                                <button class="btn btn-danger" onclick="stopApp('${appKey}')"><i class="fa fa-stop"></i> Stop</button>
+                                <button class="btn btn-secondary" onclick="stopApp('${appKey}')"><i class="fa fa-trash"></i> Uninstall</button>
                               </div>
                             </td>
                           </tr>
                         `;
                       }
                     });
+
                     if (!rowsHTML) {
                       rowsHTML = `<tr><td colspan="5" class="text-center">No apps enabled.</td></tr>`;
                     }
-                    const tableHTML = `
+
+                    installedContainer.innerHTML += `
                       <div class="table-responsive">
                         <table class="table table-hover apps-table">
                           <thead class="table-light">
                             <tr>
-                              <th scope="col">Name</th>
-                              <th scope="col">Size</th>
-                              <th scope="col">Category</th>
-                              <th scope="col">Status</th>
-                              <th scope="col">Actions</th>
+                              <th>Name</th><th>Size</th><th>Category</th><th>Status</th><th>Actions</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            ${rowsHTML}
-                          </tbody>
+                          <tbody>${rowsHTML}</tbody>
                         </table>
                       </div>
                     `;
-                    installedContainer.innerHTML += tableHTML;
-                    fetch("/update-apps", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        apps: data.apps,
-                        UNITID: data.UNITID,
-                        BOARD: renamed_board_name,
-                      }),
-                    })
-                      .then((res) => res.json())
-                      .then((result) => {
-                        console.log("Server response:", result);
-                      })
-                      .catch((err) => {
-                        console.error("Error sending updated apps.json:", err);
-                      });
 
-                    dataBuffer = ""; // Clear buffer after processing
-                    configuration = false; // Stop capturing after configuration is updated
+                    // Final cleanup
+                    dataBuffer = "";
+                    configuration = false;
                     configParameters = {};
                     console.log("Done CLEANING:", configParameters);
                   })
                   .catch((err) => {
-                    console.error("Error fetching apps data:", err);
+                    console.error("Something failed:", err);
                     document.getElementById(
                       "apps-installed-container"
                     ).innerHTML =
                       "<span class='d-flex justify-content-center'>Failed to load data.</span>";
                     document.getElementById("apps-store-container").innerHTML =
                       "<span class='d-flex justify-content-center'>Failed to load data.</span>";
+                  })
+                  .finally(() => {
+                    hideLoading();
                   });
 
                 // After extracting the configuration, update the form display
@@ -1226,6 +1592,7 @@ async function SerialMonitor() {
         button.style.display = "none";
       });
       setBoardName("(Not connected)");
+      hideLoading();
     } finally {
       reader.releaseLock();
     }
@@ -1243,15 +1610,21 @@ async function SerialMonitor() {
       button.style.display = "none";
     });
     setBoardName("(Not connected)");
+    hideLoading();
   }
 }
 
 async function saveToConfigFile(mergedConfig) {
   let formattedApps = "";
   for (let [key, value] of Object.entries(mergedConfig)) {
-    if (typeof value === "object") {
-      const arrayString = JSON.stringify(value).replace(/"/g, "'");
-      formattedApps += `${key} = ${arrayString}\\r\\n`;
+    if (key === "PYTRO_DMM_REGDICT" || key === "PYTRO_DMM_EVENTDICT") {
+      // Convert PYTRO_DMM_REGDICT to JSON with double quotes inside, single quotes outside
+      const jsonStr = JSON.stringify(value); // JSON.stringify will handle double quotes inside
+      formattedApps += `${key} = '${jsonStr.replace(/'/g, "\\'")}'\\r\\n`;
+    } else if (typeof value === "object") {
+      // Handle other objects (like arrays from selects) using single quotes inside
+      const objectString = JSON.stringify(value).replace(/"/g, "'");
+      formattedApps += `${key} = ${objectString}\\r\\n`;
     } else if (value.trim() === "") {
       formattedApps += `${key} = ''\\r\\n`;
     } else {
@@ -1281,10 +1654,188 @@ function mergedToConfig(mergedConfig, data) {
   });
 }
 
+function renumberRegisterBlockRows() {
+  const tbody = document.getElementById("registerBlockBody");
+  const rows = tbody.querySelectorAll("tr");
+  rows.forEach((row, index) => {
+    const blockNumber = index + 1;
+    const blockPrefix = `PYTRO_DMM_REGDICT.${blockNumber}`;
+    const inputs = row.querySelectorAll("input, select");
+    const cells = row.querySelectorAll("td");
+    // Update block number cell
+    cells[0].innerText = blockNumber;
+    // Update name attributes
+    inputs[0].name = `${blockPrefix}.OFFSET`;
+    inputs[1].name = `${blockPrefix}.NUMREG`;
+    inputs[2].name = `${blockPrefix}.FORMAT`;
+  });
+}
+
+function addRegisterBlockRow() {
+  const tbody = document.getElementById("registerBlockBody");
+  const rows = tbody.querySelectorAll("tr");
+  const newRowIndex = tbody.rows.length + 1;
+  const blockKey = `PYTRO_DMM_REGDICT.${newRowIndex}`;
+  // Compute new OFFSET based on previous row
+  let newOffset = "";
+  if (rows.length > 0) {
+    const lastRow = rows[rows.length - 1];
+    const lastOffsetInput = lastRow.querySelector("input[name$='.OFFSET']");
+    const lastNumregInput = lastRow.querySelector("input[name$='.NUMREG']");
+    const lastOffset = parseInt(lastOffsetInput?.value || "0", 10);
+    const lastNumreg = parseInt(lastNumregInput?.value || "0", 10);
+    if (!isNaN(lastOffset) && !isNaN(lastNumreg)) {
+      newOffset = lastOffset + lastNumreg;
+    }
+  }
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td>${newRowIndex}</td>
+    <td><input type="text" class="form-control" name="${blockKey}.OFFSET" value="${newOffset}"></td>
+    <td><input type="text" class="form-control numreg-input" name="${blockKey}.NUMREG" value=""></td>
+    <td>
+      <select class="form-control" name="${blockKey}.FORMAT">
+        <option value="">Select Format</option>
+        <option value="UInt16">UInt16</option>
+        <option value="UInt32">UInt32</option>
+        <option value="Float">Float</option>
+      </select>
+    </td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+  `;
+  tbody.appendChild(newRow);
+  renumberRegisterBlockRows();
+  // Add JS validation in case the user manually types more than 50
+  const numregInput = newRow.querySelector(".numreg-input");
+  numregInput.addEventListener("input", () => {
+    if (parseInt(numregInput.value) > 50) {
+      numregInput.value = 50;
+    }
+  });
+  const offsetInput = newRow.querySelector('input[name$=".OFFSET"]');
+  offsetInput.addEventListener("input", () => {
+    const offsetInputValue = offsetInput.value;
+    if (offsetInputValue < newOffset) {
+      offsetValueForError = newOffset;
+      document.getElementById("offsetValueError").innerText =
+        offsetValueForError;
+      document.getElementById("submitInEditModal").disabled = true;
+      document.getElementById("AddBlockInEditModal").disabled = true;
+      document.getElementById("offsetErrorContainer").style.display = "flex";
+    } else {
+      offsetValueForError = 0;
+      document.getElementById("submitInEditModal").disabled = false;
+      document.getElementById("AddBlockInEditModal").disabled = false;
+      document.getElementById("offsetErrorContainer").style.display = "none";
+    }
+  });
+}
+
+function addEventBlockRow() {
+  const tbody = document.getElementById("eventBlockBody");
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td><input type="text" class="form-control event-index-input" value=""></td>
+    <td>
+      <select class="form-select event-field event-select">
+        <option value="" disabled selected>Select EVENT</option>
+        <option value="RISING_EDGE">RISING_EDGE</option>
+        <option value="FALLING_EDGE">FALLING_EDGE</option>
+        <option value="EQUAL">EQUAL</option>
+        <option value="ONCHANGE">ONCHANGE</option>
+        <option value="HIGHER">HIGHER</option>
+        <option value="HIGHEREQ">HIGHEREQ</option>
+        <option value="LOWER">LOWER</option>
+        <option value="LOWEREQ">LOWEREQ</option>
+      </select>
+    </td>
+    <td><input type="text" class="form-control event-field prev-value" value=""></td>
+    <td><input type="text" class="form-control event-field curr-value" value=""></td>
+    <td><input type="text" class="form-control event-field upd-reg" value=""></td>
+    <td><input type="text" class="form-control event-field upd-value" value=""></td>
+    <td>
+      <select class="form-select event-field action-select">
+        <option value="" disabled selected>Select ACTION</option>
+        <option value="PUSH">Push</option>
+        <option value="UPDATE_PUSH">Update & Push</option>
+        <option value="TEST">Test</option>
+      </select>
+    </td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEventBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+  `;
+  tbody.appendChild(newRow);
+  // Add the onchange handler to the newly created EVENT select
+  const eventSelect = newRow.querySelector(".event-select");
+  const actionSelect = newRow.querySelector(".action-select");
+  const prevInput = newRow.querySelector(".prev-value");
+  const currInput = newRow.querySelector(".curr-value");
+  const updReg = newRow.querySelector(".upd-reg");
+  const updVal = newRow.querySelector(".upd-value");
+
+  eventSelect.addEventListener("change", function () {
+    const event = this.value;
+    // Reset all fields to editable and blank first
+    prevInput.readOnly = false;
+    currInput.readOnly = false;
+    prevInput.value = "";
+    currInput.value = "";
+    if (event === "RISING_EDGE" || event === "FALLING_EDGE") {
+      prevInput.value = "N/A";
+      currInput.value = "N/A";
+      prevInput.readOnly = true;
+      currInput.readOnly = true;
+    } else if (
+      event === "EQUAL" ||
+      event === "HIGHER" ||
+      event === "LOWER" ||
+      event === "HIGHEREQ" ||
+      event === "LOWEREQ"
+    ) {
+      prevInput.value = "N/A";
+      prevInput.readOnly = true;
+      currInput.readOnly = false;
+    } else if (event === "ONCHANGE") {
+      // Leave both inputs editable and empty
+      prevInput.value = "ANY";
+      currInput.value = "ANY";
+      prevInput.readOnly = false;
+      currInput.readOnly = false;
+    }
+  });
+  actionSelect.addEventListener("change", function () {
+    const action = this.value;
+    updReg.readOnly = false;
+    updVal.readOnly = false;
+    updReg.value = "";
+    updVal.value = "";
+    if (action === "PUSH" || action === "TEST") {
+      updReg.value = "N/A";
+      updVal.value = "N/A";
+      updReg.readOnly = true;
+      updVal.readOnly = true;
+    } else {
+      updReg.readOnly = false;
+      updVal.readOnly = false;
+    }
+  });
+}
+
+function removeRegisterBlockRow(button) {
+  const row = button.closest("tr");
+  if (row) row.remove();
+  renumberRegisterBlockRows();
+}
+
+function removeEventBlockRow(button) {
+  const row = button.closest("tr");
+  if (row) row.remove();
+}
+
 // edit app fields
 function editApp(appKey) {
   document.getElementById("editAppsModal").style.display = "flex";
-  fetch("/get-data")
+
+  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
     .then((response) => response.json())
     .then((data) => {
       const apps = data.apps;
@@ -1296,71 +1847,208 @@ function editApp(appKey) {
         ).innerHTML = `<p class="text-danger">App "${appKey}" not found.</p>`;
         return;
       }
+
+      const fields = app[appKey];
+      const name = fields.NAME || appKey.replaceAll("_", " ");
+      const regularFields = [];
+      const regDictNestedTables = [];
+      const eventDictNestedTables = [];
       document.getElementById(
         "editAppTitle"
-      ).innerHTML = `<span class="app-key-highlight">${appKey.replaceAll(
-        "_",
-        " "
-      )} </span> Application`;
-      const fields = app[appKey];
-      const formFields = [];
+      ).innerHTML = `<span class="app-key-highlight">${name}</span> Application`;
 
+      // --- Handle PYTRO_DMM REGDICT / EVENTDICT ---
+      if (appKey === "PYTRO_DMM") {
+        try {
+          const regDict = fields.PYTRO_DMM_REGDICT;
+          const eventDict = fields.PYTRO_DMM_EVENTDICT;
+
+          Object.keys(regDict).forEach((blockKey) => {
+            const block = regDict[blockKey];
+            const { OFFSET, NUMREG, FORMAT } = block;
+
+            regDictNestedTables.push(`
+              <tr>
+                <td><strong>${blockKey}</strong></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.OFFSET" value="${OFFSET}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.NUMREG" value="${NUMREG}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.FORMAT" value="${FORMAT}"></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+              </tr>
+            `);
+          });
+
+          Object.keys(eventDict).forEach((offsetKey) => {
+            const indexedEvents = eventDict[offsetKey];
+
+            Object.keys(indexedEvents).forEach((indexKey) => {
+              const {
+                EVENT,
+                PREV_VAL,
+                CURRENT_VAL,
+                UPDATE_REG,
+                UPDATE_VAL,
+                ACTION,
+              } = indexedEvents[indexKey];
+              const conditionLabel = `${parseInt(indexKey)}`;
+
+              eventDictNestedTables.push(`
+                <tr>
+                  <td><input type="text" class="form-control event-index-input" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}" value="${offsetKey}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.EVENT" value="${EVENT}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.PREV_VAL" value="${PREV_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.CURRENT_VAL" value="${CURRENT_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.UPDATE_REG" value="${UPDATE_REG}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.UPDATE_VAL" value="${UPDATE_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_DMM_EVENTDICT.${offsetKey}.${indexKey}.ACTION" value="${ACTION}"></td>
+                  <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEventBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+                </tr>
+              `);
+            });
+          });
+        } catch (error) {
+          console.error(
+            "Error parsing PYTRO_DMM_REGDICT or PYTRO_DMM_EVENTDICT:",
+            error
+          );
+        }
+      }
+
+      // --- Generate editable input fields ---
       for (const [key, value] of Object.entries(fields)) {
-        let inputHtml = "";
-
-        if (key.startsWith(appKey + "_") && key !== `${appKey}_ENABLE`) {
+        if (
+          key.startsWith(appKey + "_") &&
+          key !== "PYTRO_DMM_REGDICT" &&
+          key !== "PYTRO_DMM_EVENTDICT" &&
+          key !== `${appKey}_ENABLE` &&
+          key !== `${appKey}_HARDWARE`
+        ) {
           const labelName = key.replaceAll("_", " ");
+          let inputHtml = "";
+
+          if (typeof value === "object" && !Array.isArray(value)) continue;
+
           if (Array.isArray(value)) {
-            // Dropdown for arrays
             inputHtml = `<select class="form-select flex-50" name="${key}" id="${key}">
-            ${value
-              .map((opt) => `<option value="${opt}">${opt}</option>`)
-              .join("")}
-          </select>`;
+              ${value
+                .map((opt) => `<option value="${opt}">${opt}</option>`)
+                .join("")}
+            </select>`;
           } else if (
             typeof value === "boolean" ||
             value === "ON" ||
             value === "OFF"
           ) {
-            // Toggle for ON/OFF
             inputHtml = `<select class="form-select flex-50" name="${key}" id="${key}">
-            <option value="ON" ${value === "ON" ? "selected" : ""}>ON</option>
-            <option value="OFF" ${
-              value === "OFF" ? "selected" : ""
-            }>OFF</option>
-          </select>`;
+              <option value="ON" ${value === "ON" ? "selected" : ""}>ON</option>
+              <option value="OFF" ${
+                value === "OFF" ? "selected" : ""
+              }>OFF</option>
+            </select>`;
           } else {
-            // Text input
             inputHtml = `<input type="text" class="form-control flex-50" name="${key}" id="${key}" value="${value}">`;
           }
 
-          formFields.push(`
-          <div class="mb-3 d-flex justify-content-between align-items-center">
-            <label class="flex-50 text-start">${labelName}</label>
-            ${inputHtml}
-          </div>
-        `);
+          regularFields.push(`
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+              <label class="flex-50 text-start">${labelName}</label>
+              ${inputHtml}
+            </div>
+          `);
         }
       }
-      formFields.push(`
-        <div class="d-flex justify-content-end gap-2">
-          <button onclick="hideEditAppsModal()" class="btn btn-dark">
-            Cancel
-          </button>
-          <button class="btn btn-success" onclick="saveAppChanges()">
-            Submit
-          </button>
-        </div>
-      `);
+
       let formHtml = `
-        <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center">
           <input type="hidden" id="editAppKey" value="${appKey}" />
         </div>
-        ${
-          formFields.length > 1
-            ? formFields.join("")
-            : `<p class="text-danger fw-bold">No editable fields available for this application.</p>`
-        }
+      `;
+
+      if (appKey === "PYTRO_DMM") {
+        // --- PYTRO_DMM tabbed layout ---
+        formHtml += `
+          <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="commonSettings-tab" data-bs-toggle="tab" href="#commonSettings" role="tab" aria-controls="commonSettings" aria-selected="true">Common Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="registerSettings-tab" data-bs-toggle="tab" href="#registerSettings" role="tab" aria-controls="registerSettings">Register Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="advancedSettings-tab" data-bs-toggle="tab" href="#advancedSettings" role="tab" aria-controls="advancedSettings">Advanced Settings</a>
+            </li>
+          </ul>
+          <div class="tab-content mt-2" id="editAppTabsContent">
+            <div class="tab-pane fade show active" id="commonSettings" role="tabpanel" aria-labelledby="commonSettings-tab">
+              ${regularFields.join("")}
+            </div>
+            <div class="tab-pane fade" id="registerSettings" role="tabpanel" aria-labelledby="registerSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Register Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary" id="AddBlockInEditModal" onclick="addRegisterBlockRow()"><i class="fa fa-plus-circle"></i> Add Block</button>
+                </div>
+                <table class="table table-bordered mt-2" id="registerBlockTable">
+                  <thead>
+                    <tr>
+                      <th>Blocks</th>
+                      <th>Offset</th>
+                      <th>Num Reg</th>
+                      <th>Format</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="registerBlockBody">
+                    ${regDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="advancedSettings" role="tabpanel" aria-labelledby="advancedSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Event Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="addEventBlockRow()"><i class="fa fa-plus-circle"></i> Add Event</button>
+                </div>
+                <table class="table table-bordered mt-2" id="eventBlockTable">
+                  <thead>
+                    <tr>
+                      <th>Offset</th>
+                      <th>Event</th>
+                      <th>Previous Val</th>
+                      <th>Current Val</th>
+                      <th>Update Register</th>
+                      <th>Update Value</th>
+                      <th>Action</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eventBlockBody">
+                    ${eventDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // --- Other apps: flat layout ---
+        formHtml += regularFields.length
+          ? regularFields.join("")
+          : `<p class="text-danger fw-bold">No editable fields available for this application.</p>`;
+      }
+
+      // --- Add Submit / Cancel buttons ---
+      formHtml += `
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            <p id="offsetErrorContainer" style="margin-bottom: 0;display:none; color:red">Warning, the offset shouldn't be lesser than <span id="offsetValueError" class="mx-1 fw-bold">0</span></p>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="hideEditAppsModal()" class="btn btn-dark">Cancel</button>
+            <button class="btn btn-success" id="submitInEditModal" onclick="saveAppChanges()">Submit</button>
+          </div>
+        </div>
       `;
 
       document.getElementById("editAppForm").innerHTML = formHtml;
@@ -1380,6 +2068,24 @@ function saveAppChanges() {
   const appKey = document.getElementById("editAppKey")?.value;
   const updatedData = {};
   const mergedConfig = {};
+  const regDictData = {}; // To store block data for REGDICT
+  const eventDictData = {}; // To store block data for EVENTDICT
+
+  const inputsArray = Array.from(inputs);
+  const invalidInput = inputsArray.find((input) => {
+    return (
+      !input.disabled && // Skip disabled fields
+      input.offsetParent !== null && // Skip hidden fields
+      input.value.trim() === "" // Empty or just whitespace
+    );
+  });
+  if (invalidInput) {
+    document.getElementById("popup").textContent =
+      "Please fill in all required fields before saving.";
+    showPopup("rgba(205, 9, 9, 0.8)");
+    invalidInput.focus(); // Optional: highlight the first empty input
+    return;
+  }
 
   if (!appKey) {
     document.getElementById("popup").textContent = "Application is missing";
@@ -1387,7 +2093,7 @@ function saveAppChanges() {
     return;
   }
 
-  fetch("/get-data")
+  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
     .then((res) => res.json())
     .then((data) => {
       const appIndex = data.apps.findIndex((app) => app.hasOwnProperty(appKey));
@@ -1398,34 +2104,118 @@ function saveAppChanges() {
       }
       const originalApp = data.apps[appIndex][appKey];
 
+      Object.keys(originalApp).forEach((key) => {
+        if (/^PYTRO_DMM_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key)) {
+          delete originalApp[key];
+        }
+      });
+
       inputs.forEach((input) => {
         const key = input.name;
         let value = input.value;
 
         if (!key || key.trim() === "") return;
 
+        // ✅ Skip event fields from main loop
+        if (/^PYTRO_DMM_EVENTDICT\.\d+(\.|$)/.test(key)) {
+          return; // Skip both index-only keys and field keys
+        }
+
         // Convert ON/OFF to uppercase consistently
         if (value.toUpperCase() === "ON" || value.toUpperCase() === "OFF") {
           value = value.toUpperCase();
         }
 
-        const originalValue = originalApp[key];
+        // Handle block data, e.g., PYTRO_DMM_REGDICT.1.FORMAT
+        const regDictMatch = key.match(
+          /^PYTRO_DMM_REGDICT\.(\d+)\.(OFFSET|NUMREG|FORMAT)$/
+        );
+        // const eventDictMatch = key.match(
+        //   /^PYTRO_DMM_EVENTDICT\.(\d+)\.(EVENT|VALUE|ACTION)$/
+        // );
+        if (regDictMatch) {
+          const blockNumber = regDictMatch[1]; // "1", "2", etc.
+          const field = regDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
 
-        // 🔁 Handle array-like fields where first item is selected
-        if (Array.isArray(originalValue)) {
-          const rest = originalValue.filter((v) => v !== value);
-          updatedData[key] = [value, ...rest];
+          if (!regDictData[blockNumber]) {
+            regDictData[blockNumber] = {}; // Create a new block if not already present
+          }
+          regDictData[blockNumber][field] = value;
+          // } else if (eventDictMatch){
+          //     const eventIndex = eventDictMatch[1]; // "1", "2", etc.
+          //     const field = eventDictMatch[2]; // "EVENT", "VALUE", "ACTION"
+          //     if (!eventDictData[eventIndex]) {
+          //       eventDictData[eventIndex] = {}; // Create new event if not already present
+          //     }
+          //     eventDictData[eventIndex][field] = value;
         } else {
-          updatedData[key] = value;
+          const originalValue = originalApp[key];
+          if (Array.isArray(originalValue)) {
+            const rest = originalValue.filter((v) => v !== value);
+            updatedData[key] = [value, ...rest];
+          } else {
+            updatedData[key] = value;
+          }
         }
       });
 
+      // Temp map to track how many conditions per offset
+      const conditionCounter = {};
+      const eventRows = document.querySelectorAll("#eventBlockBody tr");
+
+      eventRows.forEach((row, rowIndex) => {
+        const offsetInput = row.querySelector(".event-index-input");
+        const offset = offsetInput?.value.trim();
+
+        if (!offset) {
+          console.warn(`Skipping row ${rowIndex + 1}: missing offset`);
+          return;
+        }
+
+        // Increment condition index for this offset
+        if (!conditionCounter[offset]) {
+          conditionCounter[offset] = 1;
+        } else {
+          conditionCounter[offset]++;
+        }
+
+        const conditionIndex = conditionCounter[offset]; // 1, 2, etc.
+
+        if (!eventDictData[offset]) {
+          eventDictData[offset] = {};
+        }
+        eventDictData[offset][conditionIndex] = {};
+
+        const eventFields = row.querySelectorAll(".event-field");
+        // Loop through all event fields and assign based on position
+        eventFields.forEach((field, i) => {
+          const val = field.value;
+          if (i === 0) eventDictData[offset][conditionIndex]["EVENT"] = val;
+          if (i === 1) eventDictData[offset][conditionIndex]["PREV_VAL"] = val;
+          if (i === 2)
+            eventDictData[offset][conditionIndex]["CURRENT_VAL"] = val;
+          if (i === 3)
+            eventDictData[offset][conditionIndex]["UPDATE_REG"] = val;
+          if (i === 4)
+            eventDictData[offset][conditionIndex]["UPDATE_VAL"] = val;
+          if (i === 5) eventDictData[offset][conditionIndex]["ACTION"] = val;
+        });
+      });
+
+      // If editing PYTRO_DMM, save blockData as a stringified JSON
+      if (appKey === "PYTRO_DMM") {
+        updatedData["PYTRO_DMM_REGDICT"] = regDictData;
+        updatedData["PYTRO_DMM_EVENTDICT"] = eventDictData;
+      }
+      // Merge the updated fields into the original app data
       data.apps[appIndex] = {
         [appKey]: {
           ...data.apps[appIndex][appKey], // original values
-          ...updatedData, // updated from form
+          ...updatedData, // updated values from the form
         },
       };
+      // Merge the blocks into updated data
+      // Object.assign(updatedData, regDictData);
       mergedToConfig(mergedConfig, data);
       return fetch("/update-apps", {
         method: "POST",
@@ -1433,9 +2223,10 @@ function saveAppChanges() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          mac: renamed_mac_address,
           apps: data.apps,
-          UNITID: data.UNITID,
-          BOARD: renamed_board_name,
+          unitId: renamed_mac_address_unitId,
+          board: renamed_board_name,
         }),
       });
     })
@@ -1503,7 +2294,7 @@ async function stopApp(appKey) {
     showPopup("rgba(205, 9, 9, 0.8)");
     return;
   }
-  fetch("/get-data")
+  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
     .then((res) => res.json())
     .then((data) => {
       const appIndex = data.apps.findIndex((app) => app.hasOwnProperty(appKey));
@@ -1512,6 +2303,17 @@ async function stopApp(appKey) {
         showPopup("rgba(205, 9, 9, 0.8)");
         return;
       }
+      // if (appKey === "PYTRO_DMM") {
+      //   // ⚠️ Special case: disable RS4851 shared enable field
+      //   const rs485App = data.apps.find((app) => app["PYTRO_MBRTU_RS4851"]);
+      //   if (rs485App) {
+      //     rs485App.PYTRO_MBRTU_RS4851.PYTRO_MBRTU_RS4851_ENABLE = "OFF";
+      //     console.log(
+      //       "Set PYTRO_MBRTU_RS4851_ENABLE to OFF (uninstalling PYTRO_DMM)"
+      //     );
+      //   }
+      // } else {
+      // Normal case: disable this app's enable field
       const originalApp = data.apps[appIndex][appKey];
       updatedData[enableKey] = "OFF";
       data.apps[appIndex] = {
@@ -1520,6 +2322,7 @@ async function stopApp(appKey) {
           ...updatedData, // updated from form
         },
       };
+      // }
       mergedToConfig(mergedConfig, data);
       return fetch("/update-apps", {
         method: "POST",
@@ -1527,9 +2330,10 @@ async function stopApp(appKey) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          mac: renamed_mac_address,
           apps: data.apps,
-          UNITID: data.UNITID,
-          BOARD: renamed_board_name,
+          unitId: renamed_mac_address_unitId,
+          board: renamed_board_name,
         }),
       });
     })
@@ -1553,42 +2357,63 @@ async function stopApp(appKey) {
 // install app from store
 function installApp(appKey) {
   const mergedConfig = {};
-  fetch("/get-data")
+  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
     .then((res) => res.json())
     .then((data) => {
-      const appIndex = data.apps.findIndex((app) => app.hasOwnProperty(appKey));
+      const apps = data.apps;
+      const appIndex = apps.findIndex((app) => app.hasOwnProperty(appKey));
       // Check if the app exists
       if (appIndex === -1) {
         document.getElementById(
           "popup"
         ).textContent = `The app ${appKey} not found.`;
         showPopup("rgba(205, 9, 9, 0.8)");
-        return;
+        return Promise.reject("App not found");
       }
       // Get the app object
-      const app = data.apps[appIndex][appKey];
-      if (app) {
-        app[`${appKey}_ENABLE`] = "ON"; // Update the _ENABLE field to "ON"
-        console.log(`Set ${appKey}_ENABLE to ON`);
-        mergedToConfig(mergedConfig, data);
-        // Save the updated data back (assuming a POST request to save it)
-        return fetch("/update-apps", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            apps: data.apps,
-            UNITID: data.UNITID,
-            BOARD: renamed_board_name,
-          }),
-        });
-      } else {
-        document.getElementById(
-          "popup"
-        ).textContent = `The app ${appKey} not found.`;
-        showPopup("rgba(205, 9, 9, 0.8)");
+      const targetApp = apps[appIndex][appKey];
+      const targetHardware = targetApp[`${appKey}_HARDWARE`] || [];
+
+      // ✅ Check hardware conflicts
+      for (const appObj of apps) {
+        const key = Object.keys(appObj)[0]; // app name
+        if (key === appKey) continue; // skip target app
+
+        const app = appObj[key];
+        const isEnabled = app[`${key}_ENABLE`] === "ON";
+        const otherHardware = app[`${key}_HARDWARE`] || [];
+        if (isEnabled && targetHardware.length && otherHardware.length) {
+          const conflict = targetHardware.some((hw) =>
+            otherHardware.includes(hw)
+          );
+          if (conflict) {
+            document.getElementById(
+              "popup"
+            ).textContent = `Cannot install ${appKey}. It shares hardware with ${key}.`;
+            showPopup("rgba(205, 9, 9, 0.8)");
+            return Promise.reject("Hardware conflict");
+          }
+        }
       }
+
+      // ✅ No conflict → proceed with enabling
+      targetApp[`${appKey}_ENABLE`] = "ON";
+      console.log(`Set ${appKey}_ENABLE to ON`);
+      // }
+      mergedToConfig(mergedConfig, data);
+      // Save the updated data back (assuming a POST request to save it)
+      return fetch("/update-apps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mac: renamed_mac_address,
+          apps: data.apps,
+          unitId: renamed_mac_address_unitId,
+          board: renamed_board_name,
+        }),
+      });
     })
     .then((res) => {
       if (!res.ok) throw new Error("Failed to update apps.json");
@@ -1607,32 +2432,35 @@ function installApp(appKey) {
 }
 
 async function downloadLogs() {
-  const savedLogs = localStorage.getItem("logs");
+  let savedLogs = localStorage.getItem("logs");
+  const textArea = document.getElementById("serial-output");
+  const content = textArea.textContent;
   try {
-    if (savedLogs) {
-      // Request the file handle from the user
-      const fileHandle = await window.showSaveFilePicker({
-        suggestedName: "logs.txt", // Suggested filename
-        types: [
-          {
-            description: "Text Files",
-            accept: { "text/plain": [".txt"] },
-          },
-        ],
-      });
-      // Create a writable stream to write to the file
-      const writableStream = await fileHandle.createWritable();
-      // Write the content to the file
-      await writableStream.write(savedLogs);
-      // Close the writable stream to save the file
-      await writableStream.close();
-      document.getElementById("popup").textContent = "File saved successfully";
-      showPopup("rgba(4, 217, 114, 0.75)");
-      console.log("File saved successfully");
-    } else {
-      document.getElementById("popup").textContent = "No Logs Saved Yet.";
-      showPopup("rgba(205, 9, 9, 0.8)");
-    }
+    // if (savedLogs) {
+    savedLogs += "\n" + content;
+    localStorage.setItem("logs", savedLogs);
+    const fileHandle = await window.showSaveFilePicker({
+      suggestedName: "logs.txt", // Suggested filename
+      types: [
+        {
+          description: "Text Files",
+          accept: { "text/plain": [".txt"] },
+        },
+      ],
+    });
+    // Create a writable stream to write to the file
+    const writableStream = await fileHandle.createWritable();
+    // Write the content to the file
+    await writableStream.write(savedLogs);
+    // Close the writable stream to save the file
+    await writableStream.close();
+    document.getElementById("popup").textContent = "File saved successfully";
+    showPopup("rgba(4, 217, 114, 0.75)");
+    console.log("File saved successfully");
+    // } else {
+    //   document.getElementById("popup").textContent = "No Logs Saved Yet.";
+    //   showPopup("rgba(205, 9, 9, 0.8)");
+    // }
   } catch (err) {
     document.getElementById("popup").textContent = err;
     showPopup("rgba(205, 9, 9, 0.8)");
@@ -1654,6 +2482,7 @@ async function SerialWrite(cmd) {
     const command = encoder.encode(cmd); // ASCII for command
     await writer.write(command);
     writer.releaseLock();
+    await sleep(100);
   } catch (err) {
     console.error(`Failed to send ${cmd}:`, err);
   }
@@ -2654,189 +3483,6 @@ function showPopup(backgroundColor) {
   setTimeout(function () {
     popup.style.display = "none";
   }, 3000); // 3000 milliseconds
-}
-
-function dynamicalForm(config) {
-  // Get the form container for the tab navigation and tab content
-  const tabContainer = document.getElementById("subTabs3");
-  const tabContentContainer = document.getElementById("tab-contents");
-
-  // Clear previous tab contents (if any)
-  tabContainer.innerHTML = "";
-  tabContentContainer.innerHTML = "";
-
-  // Create an object to keep track of which sections need a tab
-  const sections = {
-    cellular: [],
-    TCP: [],
-    others: [],
-  };
-
-  // Loop through the config object and categorize fields based on keywords
-  for (const key in config) {
-    if (config.hasOwnProperty(key)) {
-      const fieldValue = config[key];
-
-      // Check for "cellular" related fields and classify them
-      if (key.includes("CELL") || key.includes("APN")) {
-        sections.cellular.push({ key, fieldValue });
-      }
-      // Check for "tcp" related fields
-      else if (key.includes("TCP")) {
-        sections.TCP.push({ key, fieldValue });
-      } else {
-        sections.others.push({ key, fieldValue });
-      }
-    }
-  }
-
-  // Create the tab links dynamically
-  let isFirstTab = true;
-  for (const section in sections) {
-    if (sections[section].length > 0) {
-      console.log("iteration", section);
-      console.log("isFirstTab", isFirstTab);
-      // Create the tab item
-      const tabItem = document.createElement("li");
-      tabItem.classList.add("nav-item");
-      tabItem.setAttribute("role", "presentation");
-
-      const tabLink = document.createElement("a");
-      tabLink.classList.add("nav-link");
-      tabLink.setAttribute("id", `${section}-configuration-new`);
-      tabLink.setAttribute("data-bs-toggle", "tab");
-      tabLink.setAttribute("href", `#${section}-configuration-tab-new`);
-      tabLink.setAttribute("role", "tab");
-      tabLink.setAttribute("aria-controls", `${section}-configuration-tab-new`);
-      tabLink.textContent = `${
-        section.charAt(0).toUpperCase() + section.slice(1)
-      } Configuration`;
-      // Mark the first tab as active
-      if (isFirstTab) {
-        tabLink.classList.add("active"); // Apply active class to the first tab
-        // isFirstTab = false;
-      }
-
-      tabItem.appendChild(tabLink);
-      tabContainer.appendChild(tabItem);
-
-      // Create the tab content
-      const tabPane = document.createElement("div");
-      tabPane.classList.add("tab-pane", "fade");
-      tabPane.setAttribute("id", `${section}-configuration-tab-new`);
-      tabPane.setAttribute("role", "tabpanel");
-      tabPane.setAttribute("aria-labelledby", `${section}-configuration-new`);
-
-      if (isFirstTab) {
-        tabPane.classList.add("show"); // Show class for the first content
-        tabPane.classList.add("active"); // Active class for the first tab content
-        isFirstTab = false;
-      }
-
-      const tabRow = document.createElement("div");
-      tabRow.classList.add("row", "card", "my-2", "mx-1");
-      tabPane.appendChild(tabRow);
-
-      const tabRowHeader = document.createElement("div");
-      tabRowHeader.classList.add("card-header");
-      tabRowHeader.textContent = `${
-        section.charAt(0).toUpperCase() + section.slice(1)
-      } Configuration`;
-      tabRow.appendChild(tabRowHeader);
-
-      const tabRowBody = document.createElement("div");
-      tabRowBody.classList.add(
-        "row",
-        "card-body",
-        "d-flex",
-        "align-items-center"
-      );
-      tabRow.appendChild(tabRowBody);
-
-      // Create the form fields for this section (e.g., TCP or Cellular)
-      sections[section].forEach(({ key, fieldValue }) => {
-        const fieldWrapper = document.createElement("div");
-        if (fieldValue === "ON" || fieldValue === "OFF") {
-          fieldWrapper.classList.add("col-md-4", "form-check", "form-switch");
-          fieldWrapper.style.paddingLeft = "4em";
-        } else {
-          fieldWrapper.classList.add("col-md-4", "mb-3");
-        }
-        const label = document.createElement("label");
-        label.classList.add("form-label");
-        label.setAttribute("for", key);
-        label.textContent = key
-          .replace(/_/g, " ")
-          .replace(/^./, (str) => str.toUpperCase()); // Make the label human-readable
-        fieldWrapper.appendChild(label);
-
-        // Generate the corresponding form input
-        let input;
-        if (fieldValue === "ON" || fieldValue === "OFF") {
-          // Checkbox field (like the "Enable" toggle switch)
-          input = document.createElement("input");
-          input.classList.add("form-check-input", "mt-0");
-          input.type = "checkbox";
-          input.id = key;
-          input.style.width = "32px";
-          input.style.height = "16px";
-          input.style.marginRight = "5px";
-          input.checked = fieldValue === "ON";
-          fieldWrapper.appendChild(input);
-        } else if (
-          fieldValue === "Choose mode" ||
-          [
-            "MASTER",
-            "SLAVE",
-            "P2P_MASTER",
-            "P2P_SLAVE",
-            "MESH_MASTER",
-            "MESH_SLAVE",
-          ].includes(fieldValue)
-        ) {
-          // Dropdown (select) field (like the "Modbus Mode")
-          input = document.createElement("select");
-          input.classList.add("form-select");
-          input.id = key;
-          const option1 = document.createElement("option");
-          option1.value = "Choose mode";
-          option1.textContent = "Choose mode";
-          input.appendChild(option1);
-
-          if (fieldValue === "Choose mode") {
-            const option2 = document.createElement("option");
-            option2.value = "TRUE";
-            option2.textContent = "TRUE";
-            input.appendChild(option2);
-            const option3 = document.createElement("option");
-            option3.value = "FALSE";
-            option3.textContent = "FALSE";
-            input.appendChild(option3);
-          } else {
-            const option = document.createElement("option");
-            option.value = fieldValue;
-            option.textContent = fieldValue;
-            input.appendChild(option);
-          }
-          fieldWrapper.appendChild(input);
-        } else {
-          // Text input field (for text fields like IP Address, DNS, etc.)
-          input = document.createElement("input");
-          input.classList.add("form-control");
-          input.type = "text";
-          input.id = key;
-          input.value = fieldValue;
-          fieldWrapper.appendChild(input);
-        }
-
-        // Append the field wrapper to the tab row
-        tabRowBody.appendChild(fieldWrapper);
-      });
-
-      // Append the tab content to the container
-      tabContentContainer.appendChild(tabPane);
-    }
-  }
 }
 
 function handleFile(input) {
