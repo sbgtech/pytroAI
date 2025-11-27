@@ -204,23 +204,73 @@ def get_data():
     unitId = request.args.get("macId")
     if not unitId:
         return jsonify({"error": "MAC address required"}), 400
+
     apps_dir = "apps"
-    os.makedirs(apps_dir, exist_ok=True)  # Ensure the 'apps' folder exists
-    
+    os.makedirs(apps_dir, exist_ok=True)
+
     file_path = os.path.join(apps_dir, f"apps_{unitId}.json")
     static_file_path = os.path.join(apps_dir, "apps.json")
-    if not os.path.exists(file_path):
-        try:
-            with open(static_file_path) as f:
-                static_data = json.load(f)
-        except Exception as e:
-            return jsonify({"status": "error", "message": f"Failed to read static file: {e}"}), 500
-        default_data = {"apps": static_data.get("apps", []), "unitId": "", "board": ""}
-        with open(file_path, "w") as f:
-            json.dump(default_data, f, indent=2)
-    with open(file_path) as f:
-        data = json.load(f)
-    return jsonify(data)
+
+    try:
+        with open(static_file_path) as f:
+            static_data = json.load(f)
+            static_apps = static_data.get("apps", [])
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to read static file: {e}"}), 500
+
+    if os.path.exists(file_path):
+        with open(file_path) as f:
+            unit_data = json.load(f)
+            unit_apps = unit_data.get("apps", [])
+            unitId_val = unit_data.get("unitId", "")
+            board_val = unit_data.get("board", "")
+    else:
+        unit_apps = []
+        unitId_val = ""
+        board_val = ""
+
+    # Convert app lists to dicts for easier merging
+    def apps_list_to_dict(apps):
+        return {list(app.keys())[0]: app for app in apps}
+
+    static_dict = apps_list_to_dict(static_apps)
+    unit_dict = apps_list_to_dict(unit_apps)
+
+    # Merge: Add missing apps from static to unit
+    for app_key, app_val in static_dict.items():
+        if app_key not in unit_dict:
+            unit_dict[app_key] = app_val
+        else:
+            # Merge app fields (add missing fields from static to unit)
+            for field, value in app_val[list(app_val.keys())[0]].items():
+                if field not in unit_dict[app_key][list(app_val.keys())[0]]:
+                    unit_dict[app_key][list(app_val.keys())[0]][field] = value
+                if field == "DESCRIPTION":
+                    unit_dict[app_key][list(app_val.keys())[0]][field] = value
+
+    # Remove fields that are no longer in static apps
+    for app_key in list(unit_dict.keys()):
+        if app_key not in static_dict:
+            del unit_dict[app_key]  # Remove app entirely if it no longer exists in static
+
+        else:
+            # Check for fields that were removed from static
+            for field in list(unit_dict[app_key][list(unit_dict[app_key].keys())[0]].keys()):
+                if field not in static_dict[app_key][list(static_dict[app_key].keys())[0]]:
+                    del unit_dict[app_key][list(unit_dict[app_key].keys())[0]][field]
+
+    # Convert back to list
+    merged_apps = list(unit_dict.values())
+
+    # Save merged file back
+    updated_data = {
+        "apps": merged_apps,
+        "unitId": unitId_val,
+        "board": board_val
+    }
+    with open(file_path, "w") as f:
+        json.dump(updated_data, f, indent=2)
+    return jsonify(updated_data)
 
 @app.route("/update-apps", methods=["POST"])
 def update_apps():

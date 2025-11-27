@@ -1,8 +1,8 @@
 {
-  "mac": "02:07:27:03:23:BB",
   "apps": [
     {
       "PYTRO_MCU_LOG": {
+        "DESCRIPTION": "Logging application",
         "NAME": "",
         "PYTRO_MCU_LOG_ENABLE": "OFF"
       }
@@ -10,110 +10,126 @@
     {
       "PYTRO_CELL": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Communicate with the cloud using cellular commuication",
         "NAME": "",
-        "PYTRO_CELL_APN": "teal",
+        "PYTRO_CELL_APN": "internet.ooredoo.tn",
+        "PYTRO_CELL_ATT_PROFILE": "ON",
         "PYTRO_CELL_ENABLE": "OFF",
-        "PYTRO_CELL_HIGH_WORD_FIRST": "ON",
-        "SIZE": ""
-      }
-    },
-    {
-      "PYTRO_TCP": {
-        "CATEGORY": "",
-        "DESCRIPTION": "",
-        "NAME": "",
-        "PYTRO_TCP_DNS": "8.8.8.8",
-        "PYTRO_TCP_ENABLE": "OFF",
-        "PYTRO_TCP_GATEWAY": "192.168.10.1",
-        "PYTRO_TCP_IP_ADDRESS": "192.168.10.10",
-        "PYTRO_TCP_MODBUS_HIGH_WORD_FIRST": "OFF",
-        "PYTRO_TCP_MODBUS_MODE": [
-          "SLAVE",
-          "MASTER"
+        "PYTRO_CELL_HARDWARE": [
+          "CELL"
         ],
-        "PYTRO_TCP_MODBUS_PORT": "503",
-        "PYTRO_TCP_MODBUS_SLAVEID": "1",
-        "PYTRO_TCP_SUBNET_MASK": "255.255.255.0",
         "SIZE": ""
       }
     },
     {
-      "PYTRO_MBRTU_RS4851": {
+      "PYTRO_MTS": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Modbus TCP Slave",
         "NAME": "",
-        "PUBLISHER": "",
-        "PYTRO_MBRTU_RS4851_BAUDRATE": "9900",
-        "PYTRO_MBRTU_RS4851_ENABLE": "OFF",
-        "PYTRO_MBRTU_RS4851_HIGH_WORD_FIRST": "OFF",
-        "PYTRO_MBRTU_RS4851_MODE": [
-          "MASTER",
-          "SLAVE"
+        "PYTRO_MTS_DNS": "8.8.8.8",
+        "PYTRO_MTS_ENABLE": "OFF",
+        "PYTRO_MTS_GATEWAY": "192.168.10.1",
+        "PYTRO_MTS_HARDWARE": [
+          "ETHERNET"
         ],
-        "PYTRO_MBRTU_RS4851_SLAVEID": "2",
+        "PYTRO_MTS_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_MTS_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MTS_PORT": "503",
+        "PYTRO_MTS_SLAVE_ID": "1",
+        "PYTRO_MTS_SUBNET_MASK": "255.255.255.0",
         "SIZE": ""
       }
     },
     {
-      "PYTRO_MBRTU_RS4852": {
+      "PYTRO_MTM": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Modbus TCP Master",
         "NAME": "",
-        "PUBLISHER": "",
-        "PYTRO_MBRTU_RS4852_BAUDRATE": "9600",
-        "PYTRO_MBRTU_RS4852_ENABLE": "OFF",
-        "PYTRO_MBRTU_RS4852_HIGH_WORD_FIRST": "ON",
-        "PYTRO_MBRTU_RS4852_MODE": [
-          "SLAVE",
-          "MASTER"
+        "PYTRO_MTM_DNS": "8.8.8.8",
+        "PYTRO_MTM_ENABLE": "OFF",
+        "PYTRO_MTM_GATEWAY": "192.168.10.1",
+        "PYTRO_MTM_HARDWARE": [
+          "ETHERNET"
         ],
-        "PYTRO_MBRTU_RS4852_SLAVEID": "1",
+        "PYTRO_MTM_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_MTM_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MTM_PORT": "503",
+        "PYTRO_MTM_SLAVE_ADDRESS": "192.168.10.11",
+        "PYTRO_MTM_SLAVE_ID": "1",
+        "PYTRO_MTM_SUBNET_MASK": "255.255.255.0",
         "SIZE": ""
       }
     },
     {
-      "PYTRO_MBRTU_RS232": {
+      "PYTRO_MRS4": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Modbus RTU Slave RS485",
         "NAME": "",
         "PUBLISHER": "",
-        "PYTRO_MBRTU_RS232_BAUDRATE": "9600",
-        "PYTRO_MBRTU_RS232_ENABLE": "OFF",
-        "PYTRO_MBRTU_RS232_HIGH_WORD_FIRST": "ON",
-        "PYTRO_MBRTU_RS232_MODE": [
-          "SLAVE",
-          "MASTER"
+        "PYTRO_MRS4_BAUDRATE": "19200",
+        "PYTRO_MRS4_ENABLE": "OFF",
+        "PYTRO_MRS4_HARDWARE": [
+          "RS4851"
         ],
-        "PYTRO_MBRTU_RS232_SLAVEID": "1",
+        "PYTRO_MRS4_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MRS4_SLAVE_ID": "11",
         "SIZE": ""
       }
     },
     {
-      "PYTRO_RADIO": {
+      "PYTRO_MRM4": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Modbus RTU Master RS485",
         "NAME": "",
         "PUBLISHER": "",
-        "PYTRO_RADIO_ADDRESS": "B105",
-        "PYTRO_RADIO_ENABLE": "OFF",
-        "PYTRO_RADIO_HIGH_WORD_FIRST": "OFF",
-        "PYTRO_RADIO_MODE": [
-          "P2P_MASTER",
-          "P2P_SLAVE",
-          "MESH_SLAVE",
-          "MESH_MASTER"
+        "PYTRO_MRM4_BAUDRATE": "19200",
+        "PYTRO_MRM4_ENABLE": "OFF",
+        "PYTRO_MRM4_HARDWARE": [
+          "RS4852"
         ],
-        "PYTRO_RADIO_SLAVE_ID": "B103",
+        "PYTRO_MRM4_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MRM4_SLAVE_ID": "7",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MRS2": {
+        "CATEGORY": "",
+        "DESCRIPTION": "Modbus RTU Slave RS232",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MRS2_BAUDRATE": "19200",
+        "PYTRO_MRS2_ENABLE": "OFF",
+        "PYTRO_MRS2_HARDWARE": [
+          "RS232"
+        ],
+        "PYTRO_MRS2_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MRS2_SLAVE_ID": "15",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MRM2": {
+        "CATEGORY": "",
+        "DESCRIPTION": "Modbus RTU Master RS232",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MRM2_BAUDRATE": "19200",
+        "PYTRO_MRM2_ENABLE": "OFF",
+        "PYTRO_MRM2_HARDWARE": [
+          "RS232"
+        ],
+        "PYTRO_MRM2_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MRM2_SLAVE_ID": "7",
         "SIZE": ""
       }
     },
     {
       "PYTRO_BLE": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Communicate with the mobile app using BLE commuication",
         "NAME": "",
-        "PYTRO_BLE_ENABLE": "OFF",
+        "PYTRO_BLE_ENABLE": "ON",
         "PYTRO_BLE_PIN": "110011",
         "SIZE": ""
       }
@@ -121,91 +137,90 @@
     {
       "PYTRO_DMM": {
         "CATEGORY": "Modbus RTU",
-        "DESCRIPTION": "Modbus RTU Master For Dynagen Controllers Using RS485 Port.",
-        "NAME": "DYNAGEN MODBUS MASTER",
+        "DESCRIPTION": "DYNAGEN MODBUS MASTER",
+        "NAME": "",
         "PUBLISHER": "",
-        "PYTRO_DMM_CELL_APN": "internet.ooredoo.com",
-        "PYTRO_DMM_CELL_HIGH_WORD_FIRST": "OFF",
-        "PYTRO_DMM_ENABLE": "ON",
+        "PYTRO_DMM_ATT_PROFILE": "ON",
+        "PYTRO_DMM_CELL_APN": "internet.ooredoo.tn",
+        "PYTRO_DMM_ENABLE": "OFF",
         "PYTRO_DMM_EVENTDICT": {
           "130": {
             "1": {
-              "ACTION": "PUSH",
-              "CURRENT_VAL": "NEW1",
-              "EVENT": "RISING_EDGE",
-              "PREV_VAL": "PREV1",
-              "UPDATE_REG": "UPDREG1",
-              "UPDATE_VAL": "UPDVAL1"
+              "ACTION": "TEST",
+              "CURRENT_VAL": "8014",
+              "EVENT": "EQUAL",
+              "PREV_VAL": "N/A",
+              "UPDATE_REG": "N/A",
+              "UPDATE_VAL": "N/A"
             }
           },
-          "133": {
+          "167": {
             "1": {
-              "ACTION": "PUSH",
-              "CURRENT_VAL": "NEW2",
-              "EVENT": "EQUAL",
-              "PREV_VAL": "PREV2",
-              "UPDATE_REG": "UPDREG2",
-              "UPDATE_VAL": "UPDVAL2"
+              "ACTION": "UPDATE_PUSH",
+              "CURRENT_VAL": "ANY",
+              "EVENT": "ONCHANGE",
+              "PREV_VAL": "153",
+              "UPDATE_REG": "130",
+              "UPDATE_VAL": "8014"
             },
             "2": {
-              "ACTION": "UPDATE_PUSH",
-              "CURRENT_VAL": "23",
-              "EVENT": "LOWER",
-              "PREV_VAL": "N/A",
-              "UPDATE_REG": "66",
-              "UPDATE_VAL": "77"
+              "ACTION": "PUSH",
+              "CURRENT_VAL": "153",
+              "EVENT": "ONCHANGE",
+              "PREV_VAL": "ANY",
+              "UPDATE_REG": "N/A",
+              "UPDATE_VAL": "N/A"
             }
           }
         },
         "PYTRO_DMM_HARDWARE": [
           "CELL",
-          "RS485"
+          "RS4851"
         ],
         "PYTRO_DMM_REGDICT": {
           "1": {
             "FORMAT": "UInt16",
-            "NUMREG": "95",
+            "NUMREG": "50",
             "OFFSET": "129"
           },
           "2": {
-            "FORMAT": "UInt32",
-            "NUMREG": "20",
-            "OFFSET": "224"
+            "FORMAT": "UInt16",
+            "NUMREG": "46",
+            "OFFSET": "179"
           }
         },
-        "PYTRO_DMM_RS485_BAUDRATE": "9500",
-        "PYTRO_DMM_RS485_HIGH_WORD_FIRST": "OFF",
-        "PYTRO_DMM_RS485_SLAVEID": "11",
+        "PYTRO_DMM_RS485_BAUDRATE": "9600",
+        "PYTRO_DMM_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_DMM_RS485_SLAVE_ID": "11",
         "SIZE": ""
       }
     },
     {
       "PYTRO_WPRM": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Welltimer PID Radio Master",
         "NAME": "",
         "PUBLISHER": "",
         "PYTRO_WPRM_ADDRESS": "B103",
+        "PYTRO_WPRM_ATT_PROFILE": "ON",
+        "PYTRO_WPRM_CELL_APN": "teal",
         "PYTRO_WPRM_CHANNEL": "41",
         "PYTRO_WPRM_ENABLE": "OFF",
         "PYTRO_WPRM_HARDWARE": [
           "CELL",
-          "RADIO",
-          "RS485"
+          "RADIO"
         ],
         "PYTRO_WPRM_NUMREG": "28",
         "PYTRO_WPRM_OFFSET": "600",
         "PYTRO_WPRM_POLLRATE": "30",
-        "PYTRO_WPRM_SLAVE_ID": "B199",
-        "SIZE": "",
-        "PYTRO_WPRM_CELL_APN": "internet.ooredoo.com",
-        "PYTRO_WPRM_CELL_HIGH_WORD_FIRST": "ON"
+        "PYTRO_WPRM_SLAVE_ID": "B102",
+        "SIZE": ""
       }
     },
     {
       "PYTRO_WPRS": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Welltimer PID Radio Slave",
         "NAME": "",
         "PUBLISHER": "",
         "PYTRO_WPRS_ADDRESS": "B102",
@@ -213,33 +228,122 @@
         "PYTRO_WPRS_ENABLE": "OFF",
         "PYTRO_WPRS_HARDWARE": [
           "RADIO",
-          "RS485"
+          "RS4851"
         ],
+        "PYTRO_WPRS_RS485_BAUDRATE": "19200",
+        "PYTRO_WPRS_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_WPRS_RS485_SLAVE_ID": "7",
         "SIZE": ""
       }
     },
     {
       "PYTRO_WDFRM": {
         "CATEGORY": "",
-        "DESCRIPTION": "",
+        "DESCRIPTION": "Welltimer Dual Flowmeter Radio Master",
         "NAME": "",
         "PUBLISHER": "",
-        "PYTRO_WDFRM_ADDRESS": "",
-        "PYTRO_WDFRM_CHANNEL": "",
-        "PYTRO_WDFRM_ENABLE": "",
+        "PYTRO_WDFRM_ADDRESS": "B105",
+        "PYTRO_WDFRM_ATT_PROFILE": "ON",
+        "PYTRO_WDFRM_CELL_APN": "teal",
+        "PYTRO_WDFRM_CHANNEL": "41",
+        "PYTRO_WDFRM_ENABLE": "OFF",
         "PYTRO_WDFRM_HARDWARE": [
           "RADIO",
-          "CELL",
-          "RS485"
+          "CELL"
         ],
-        "PYTRO_WDFRM_INJ_ID": "",
-        "PYTRO_WDFRM_NUMREG": "",
-        "PYTRO_WDFRM_SALES_ID": "",
-        "PYTRO_WDFRM_SLAVE_ID": "",
+        "PYTRO_WDFRM_INJ_ID": "2",
+        "PYTRO_WDFRM_NUMREG": "18",
+        "PYTRO_WDFRM_SALES_ID": "1",
+        "PYTRO_WDFRM_SLAVE_ID": "B103",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_RMM4": {
+        "CATEGORY": "",
+        "DESCRIPTION": "Radio Modbus Master RS485",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_RMM4_ENABLE": "ON",
+        "PYTRO_RMM4_HARDWARE": [
+          "RADIO",
+          "RS4851"
+        ],
+        "PYTRO_RMM4_RADIO_ADDRESS": "B103",
+        "PYTRO_RMM4_RADIO_CHANNEL": "12",
+        "PYTRO_RMM4_RADIO_SLAVE_ID": "B102",
+        "PYTRO_RMM4_REGDICT": {
+          "1": {
+            "FORMAT": "UInt16",
+            "NUMREG": "50",
+            "OFFSET": "129"
+          },
+          "2": {
+            "FORMAT": "UInt16",
+            "NUMREG": "46",
+            "OFFSET": "179"
+          }
+        },
+        "PYTRO_RMM4_RS485_BAUDRATE": "9600",
+        "PYTRO_RMM4_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_RMM4_RS485_SLAVE_ID": "11",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_RMS4": {
+        "CATEGORY": "",
+        "DESCRIPTION": "Radio Modbus Slave RS485",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_RMS4_ENABLE": "ON",
+        "PYTRO_RMS4_HARDWARE": [
+          "RADIO",
+          "RS4851"
+        ],
+        "PYTRO_RMS4_RADIO_ADDRESS": "B102",
+        "PYTRO_RMS4_RADIO_CHANNEL": "12",
+        "PYTRO_RMS4_RADIO_SLAVE_ID": "B103",
+        "PYTRO_RMS4_RS485_BAUDRATE": "9600",
+        "PYTRO_RMS4_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_RMS4_RS485_SLAVE_ID": "1",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MRH4": {
+        "CATEGORY": "",
+        "DESCRIPTION": "Modbus Radio Hub RS485",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MRH4_ENABLE": "ON",
+        "PYTRO_MRH4_HARDWARE": [
+          "RADIO",
+          "RS4851"
+        ],
+        "PYTRO_MRH4_RADIO_ADDRESS": "B102",
+        "PYTRO_MRH4_RADIO_CHANNEL": "12",
+        "PYTRO_MRH4_REGDICT": {
+          "1": {
+            "NODE_ID": "B103",
+            "OFFSET": "0"
+          },
+          "2": {
+            "NODE_ID": "B104",
+            "OFFSET": "1000"
+          },
+          "3": {
+            "NODE_ID": "B105",
+            "OFFSET": "2000"
+          }
+        },
+        "PYTRO_MRH4_RS485_BAUDRATE": "9600",
+        "PYTRO_MRH4_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MRH4_RS485_SLAVE_ID": "1",
         "SIZE": ""
       }
     }
   ],
   "unitId": "0207270323BB",
-  "board": "RECON CONTROLLER V2"
+  "board": "WTPLC"
 }

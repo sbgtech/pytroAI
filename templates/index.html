@@ -540,7 +540,7 @@
                     <div>
                       <button
                         class="btn btn-light border border-dark"
-                        onclick="configForm()"
+                        onclick="configFormForRefreshBtnOnly()"
                       >
                         <i class="fa fa-refresh"></i>
                         Refresh
@@ -582,7 +582,7 @@
                     <div>
                       <button
                         class="btn btn-light border border-dark"
-                        onclick="configForm()"
+                        onclick="configFormForRefreshBtnOnly()"
                       >
                         <i class="fa fa-refresh"></i>
                         Refresh
@@ -950,6 +950,9 @@
                                 <option value="PYDAQ_B200">PYDAQ B200</option>
                                 <option value="PYTITAN">PYTITAN</option>
                                 <option value="ODIN-G">ODIN-G</option>
+                                <option value="WT_PLC">WTPLC</option>
+                                <option value="PYDAQ_C2402">PYDAQ C2402</option>
+                                <option value="PX_A300">PX A300</option>
                               </select>
                             </div>
                             <div class="mb-3">
@@ -1273,7 +1276,7 @@
                       <button
                         class="btn btn-light border border-dark"
                         id="ConfigFormRefreshButton"
-                        onclick="configForm()"
+                        onclick="configFormForRefreshBtnOnly()"
                       >
                         <i class="fa fa-refresh"></i>
                         Refresh
@@ -1510,6 +1513,30 @@
       <div class="loading-backdrop">
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading, please wait...</div>
+      </div>
+    </div>
+
+    <div id="loginModal" class="login-overlay">
+      <div class="login-box">
+        <h3>Login</h3>
+        <form
+          onsubmit="event.preventDefault(); validateLogin();"
+          class="login-form"
+        >
+          <input
+            type="text"
+            id="loginUsername"
+            placeholder="Username"
+            class="form-control mb-2"
+          />
+          <input
+            type="password"
+            id="loginPass"
+            placeholder="Password"
+            class="form-control mb-2"
+          />
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
       </div>
     </div>
 

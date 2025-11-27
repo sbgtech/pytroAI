@@ -28,6 +28,9 @@ let renamed_board_name = "";
 let renamed_mac_address = "";
 let renamed_mac_address_unitId = "";
 let isDeviceConnected = false;
+const appButtons = document.querySelectorAll("button");
+const serialMonitorBtn = document.getElementById("serialMonitorBtn");
+const appListItems = document.querySelectorAll("li");
 
 // async function fetchStateAndApply(isAll) {
 //   const res = await fetch("/get_state");
@@ -62,7 +65,22 @@ let isDeviceConnected = false;
 //   fetchStateAndApply(isAll); // Reapply new state
 // }
 
-/* verify ifrxist a username params in the url */
+function validateLogin() {
+  const u = document.getElementById("loginUsername").value;
+  const p = document.getElementById("loginPass").value;
+  if (u.toLowerCase() === "admin" && p === "7707") {
+    document.getElementById("loginModal").style.display = "none";
+    serialMonitorBtn.disabled = false;
+    appListItems.forEach((li) => {
+      li.style.pointerEvents = "auto";
+      li.style.opacity = "1";
+    });
+  } else {
+    alert("Invalid Username Or Password");
+  }
+}
+
+/* verify if exist a username params in the url */
 window.onload = function () {
   const urlParams = new URLSearchParams(window.location.search);
   const username = urlParams.get("username");
@@ -78,6 +96,13 @@ window.onload = function () {
     sendButton.disabled = true;
     alert("Username is missing in the URL.");
   }
+
+  serialMonitorBtn.disabled = true;
+  appListItems.forEach((li) => {
+    li.style.pointerEvents = "none";
+    li.style.opacity = "0.5";
+  });
+  document.getElementById("loginModal").style.display = "flex";
   // fetchStateAndApply();
 };
 
@@ -226,7 +251,9 @@ function saveDataToJSON() {
   const form = document.getElementById("dynamicConfigForm");
   const inputs = form.querySelectorAll("input, select");
   const inputDetails = {};
-  const regDictBlocks = {};
+  const DMMregDictBlocks = {};
+  const RMM4regDictBlocks = {};
+  const MRH4regDictBlocks = {};
   const eventDictBlocks = {};
   // Step 1: Extract all input values
   inputs.forEach((input) => {
@@ -257,17 +284,17 @@ function saveDataToJSON() {
     }
     inputDetails[id] = value;
   });
-  // Step 2: Process REGDICT
+  // Step 2: Process DMM REGDICT
   for (let key in inputDetails) {
     const match = key.match(/^PYTRO_DMM_REGDICT\.(\d+)\.(\w+)$/);
     if (match) {
       const blockKey = match[1]; // e.g., "1"
       const subKey = match[2]; // e.g., "FORMAT"
 
-      if (!regDictBlocks[blockKey]) {
-        regDictBlocks[blockKey] = {};
+      if (!DMMregDictBlocks[blockKey]) {
+        DMMregDictBlocks[blockKey] = {};
       }
-      regDictBlocks[blockKey][subKey] = inputDetails[key];
+      DMMregDictBlocks[blockKey][subKey] = inputDetails[key];
 
       delete inputDetails[key]; // Remove flattened key
     }
@@ -293,13 +320,45 @@ function saveDataToJSON() {
       delete inputDetails[key];
     }
   }
-  // Step 4: Assemble the final structure
+  // Step 4: Process RMM4 REGDICT
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_RMM4_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockKey = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "FORMAT"
+
+      if (!RMM4regDictBlocks[blockKey]) {
+        RMM4regDictBlocks[blockKey] = {};
+      }
+      RMM4regDictBlocks[blockKey][subKey] = inputDetails[key];
+
+      delete inputDetails[key]; // Remove flattened key
+    }
+  }
+  // Step 5: Process MRH4 REGDICT
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_MRH4_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockKey = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "NODE_ID"
+
+      if (!MRH4regDictBlocks[blockKey]) {
+        MRH4regDictBlocks[blockKey] = {};
+      }
+      MRH4regDictBlocks[blockKey][subKey] = inputDetails[key];
+
+      delete inputDetails[key]; // Remove flattened key
+    }
+  }
+  // Step 6: Assemble the final structure
   const finalConfig = {
     ...inputDetails,
     PYTRO_DMM_EVENTDICT: eventDictBlocks,
-    PYTRO_DMM_REGDICT: regDictBlocks,
+    PYTRO_DMM_REGDICT: DMMregDictBlocks,
+    PYTRO_RMM4_REGDICT: RMM4regDictBlocks,
+    PYTRO_MRH4_REGDICT: MRH4regDictBlocks,
   };
-  // Step 5: Export JSON
+  // Step 7: Export JSON
   // Convert the data object into a JSON string
   const jsonData = JSON.stringify(finalConfig, null, 2);
   // Create a Blob object with the JSON string
@@ -314,9 +373,51 @@ function saveDataToJSON() {
   URL.revokeObjectURL(link.href);
 }
 
-async function configForm() {
+async function configFormForRefreshBtnOnly() {
   try {
     showLoading();
+    document.getElementById("configFormDataContainer").style.display = "none";
+    document.querySelectorAll(".loadMessageContainer").forEach((button) => {
+      button.style.display = "flex";
+    });
+    document.querySelectorAll(".reconnect-btn").forEach((button) => {
+      button.style.display = "none";
+    });
+    document.querySelectorAll(".loadMessageText").forEach((text) => {
+      text.textContent = "";
+    });
+    setTimeout(() => {
+      if (isDeviceConnected) {
+        document.querySelectorAll(".loadMessageContainer").forEach((button) => {
+          button.style.display = "none";
+        });
+        // hideLoading();
+      } else {
+        document.querySelectorAll(".loadMessageText").forEach((text) => {
+          text.textContent =
+            "Error to loading, please try to reconnect the device";
+        });
+        document.querySelectorAll(".reconnect-btn").forEach((button) => {
+          button.style.display = "block";
+        });
+        hideLoading();
+      }
+    }, 1000);
+    Filecheck = true;
+    await SerialWrite(
+      `\x03\r\nprint(f"<>{machine.board_name()}<>")\r\nimport os\r\nprint('CONFIG1' if 'config.py' in os.listdir() else 'CONFIG0')\r\n`
+    );
+    const inputField = document.getElementById("serial-input");
+    inputField.disabled = false;
+    inputField.placeholder = "Input your commands here...";
+  } catch (err) {
+    console.error("Config Form error:", err);
+  }
+}
+
+async function configForm() {
+  try {
+    // showLoading();
     document.getElementById("configFormDataContainer").style.display = "none";
     document.querySelectorAll(".loadMessageContainer").forEach((button) => {
       button.style.display = "flex";
@@ -392,18 +493,52 @@ async function applyConfig(event) {
     }
     inputDetails[id] = value;
   });
-  const regDictBlocks = {};
+  const DMMregDictBlocks = {};
+  const RMM4regDictBlocks = {};
+  const MRH4regDictBlocks = {};
   for (let key in inputDetails) {
     const match = key.match(/^PYTRO_DMM_REGDICT\.(\d+)\.(\w+)$/);
     if (match) {
       const blockNumber = match[1]; // e.g., "1"
       const subKey = match[2]; // e.g., "FORMAT"
 
-      if (!regDictBlocks[blockNumber]) {
-        regDictBlocks[blockNumber] = {}; // Initialize the block if it doesn't exist
+      if (!DMMregDictBlocks[blockNumber]) {
+        DMMregDictBlocks[blockNumber] = {}; // Initialize the block if it doesn't exist
       }
 
-      regDictBlocks[blockNumber][subKey] = inputDetails[key]; // Add the subkey and value to the block
+      DMMregDictBlocks[blockNumber][subKey] = inputDetails[key]; // Add the subkey and value to the block
+
+      // Remove the flattened key from inputDetails
+      delete inputDetails[key];
+    }
+  }
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_RMM4_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockNumber = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "FORMAT"
+
+      if (!RMM4regDictBlocks[blockNumber]) {
+        RMM4regDictBlocks[blockNumber] = {}; // Initialize the block if it doesn't exist
+      }
+
+      RMM4regDictBlocks[blockNumber][subKey] = inputDetails[key]; // Add the subkey and value to the block
+
+      // Remove the flattened key from inputDetails
+      delete inputDetails[key];
+    }
+  }
+  for (let key in inputDetails) {
+    const match = key.match(/^PYTRO_MRH4_REGDICT\.(\d+)\.(\w+)$/);
+    if (match) {
+      const blockNumber = match[1]; // e.g., "1"
+      const subKey = match[2]; // e.g., "NODE_ID"
+
+      if (!MRH4regDictBlocks[blockNumber]) {
+        MRH4regDictBlocks[blockNumber] = {}; // Initialize the block if it doesn't exist
+      }
+
+      MRH4regDictBlocks[blockNumber][subKey] = inputDetails[key]; // Add the subkey and value to the block
 
       // Remove the flattened key from inputDetails
       delete inputDetails[key];
@@ -464,8 +599,14 @@ async function applyConfig(event) {
   }
 
   // Step 6: Merge into final config object
-  if (Object.keys(regDictBlocks).length > 0) {
-    inputDetails["PYTRO_DMM_REGDICT"] = regDictBlocks; // Keep as an object, not a string
+  if (Object.keys(DMMregDictBlocks).length > 0) {
+    inputDetails["PYTRO_DMM_REGDICT"] = DMMregDictBlocks; // Keep as an object, not a string
+  }
+  if (Object.keys(RMM4regDictBlocks).length > 0) {
+    inputDetails["PYTRO_RMM4_REGDICT"] = RMM4regDictBlocks; // Keep as an object, not a string
+  }
+  if (Object.keys(MRH4regDictBlocks).length > 0) {
+    inputDetails["PYTRO_MRH4_REGDICT"] = MRH4regDictBlocks; // Keep as an object, not a string
   }
 
   if (Object.keys(eventDictBlocks).length > 0) {
@@ -474,9 +615,7 @@ async function applyConfig(event) {
 
   // Log the final inputDetails to verify
   console.log("Final inputDetails:", inputDetails);
-  saveToConfigFile(inputDetails);
-  document.getElementById("popup").textContent = "Form Saved Successfully";
-  showPopup("#208f5b");
+  saveToConfigFile(inputDetails, "Form Saved Successfully", "#208f5b");
 }
 
 function generateForm(config) {
@@ -493,8 +632,8 @@ function generateForm(config) {
   // Step 1: Group keys by their prefix
   for (const [key, value] of Object.entries(config)) {
     const parts = key.split("_");
-    if (parts.includes("MBRTU")) {
-      // Take first 3 parts for MBRTU (e.g., PYTRO_MBRTU_RS4851)
+    if (parts.includes("MCU")) {
+      // Take first 3 parts for MCU (e.g., PYTRO_MCU_LOG)
       prefix = parts.slice(0, 3).join("_");
     } else {
       // Take first 2 parts for others (e.g., PYTRO_CELL)
@@ -630,6 +769,108 @@ function generateForm(config) {
                   input.setAttribute("value", fieldValue);
                   input.classList.add("form-control");
                 }
+                fieldInputCol.appendChild(input);
+                fieldRow.appendChild(fieldLabelCol);
+                fieldRow.appendChild(fieldInputCol);
+                subInputsContainer.appendChild(fieldRow);
+              }
+              subFieldset.appendChild(subInputsContainer);
+              fieldset.appendChild(subFieldset);
+            }
+          } else if (key === "PYTRO_RMM4_REGDICT") {
+            for (const [subKey, subValue] of Object.entries(value)) {
+              const subFieldset = document.createElement("fieldset");
+              subFieldset.classList.add("form-group", "p-2");
+              const subLabelContainer = document.createElement("div");
+              const subInputsContainer = document.createElement("div");
+              subInputsContainer.classList.add(
+                "d-flex",
+                "justify-content-between"
+              );
+              const subLabel = document.createElement("label");
+              subLabel.setAttribute("for", `${key}.${subKey}`);
+              subLabel.textContent = `Block ${subKey}`;
+              subLabel.classList.add("form-label", "mt-2", "fw-bold");
+              subLabelContainer.appendChild(subLabel);
+              subFieldset.appendChild(subLabelContainer);
+
+              for (const [fieldKey, fieldValue] of Object.entries(subValue)) {
+                const fieldRow = document.createElement("div");
+                fieldRow.classList.add("flex-32");
+                const fieldLabelCol = document.createElement("div");
+                const fieldInputCol = document.createElement("div");
+                const fieldLabel = document.createElement("label");
+                fieldLabel.textContent = fieldKey;
+                fieldLabel.setAttribute("for", `${key}.${subKey}.${fieldKey}`);
+                fieldLabelCol.appendChild(fieldLabel);
+
+                let input;
+                if (fieldKey === "FORMAT") {
+                  input = document.createElement("select");
+                  input.setAttribute("id", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("name", `${key}.${subKey}.${fieldKey}`);
+                  input.classList.add("form-select");
+                  const options = ["UInt16", "UInt32", "Float"];
+                  options.forEach((opt) => {
+                    const option = document.createElement("option");
+                    option.value = opt;
+                    option.textContent = opt;
+                    if (opt === fieldValue) {
+                      option.selected = true;
+                    }
+                    input.appendChild(option);
+                  });
+                } else {
+                  input = document.createElement("input");
+                  input.setAttribute("type", "text");
+                  input.setAttribute("id", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("name", `${key}.${subKey}.${fieldKey}`);
+                  input.setAttribute("value", fieldValue);
+                  input.classList.add("form-control");
+                }
+                fieldInputCol.appendChild(input);
+                fieldRow.appendChild(fieldLabelCol);
+                fieldRow.appendChild(fieldInputCol);
+                subInputsContainer.appendChild(fieldRow);
+              }
+              subFieldset.appendChild(subInputsContainer);
+              fieldset.appendChild(subFieldset);
+            }
+          } else if (key === "PYTRO_MRH4_REGDICT") {
+            for (const [subKey, subValue] of Object.entries(value)) {
+              const subFieldset = document.createElement("fieldset");
+              subFieldset.classList.add("form-group", "p-2");
+              const subLabelContainer = document.createElement("div");
+              const subInputsContainer = document.createElement("div");
+              subInputsContainer.classList.add(
+                "d-flex",
+                "justify-content-between"
+              );
+              const subLabel = document.createElement("label");
+              subLabel.setAttribute("for", `${key}.${subKey}`);
+              subLabel.textContent = `Block ${subKey}`;
+              subLabel.classList.add("form-label", "mt-2", "fw-bold");
+              subLabelContainer.appendChild(subLabel);
+              subFieldset.appendChild(subLabelContainer);
+
+              for (const [fieldKey, fieldValue] of Object.entries(subValue)) {
+                const fieldRow = document.createElement("div");
+                fieldRow.classList.add("flex-47");
+                const fieldLabelCol = document.createElement("div");
+                const fieldInputCol = document.createElement("div");
+                const fieldLabel = document.createElement("label");
+                fieldLabel.textContent = fieldKey;
+                fieldLabel.setAttribute("for", `${key}.${subKey}.${fieldKey}`);
+                fieldLabelCol.appendChild(fieldLabel);
+
+                let input;
+                input = document.createElement("input");
+                input.setAttribute("type", "text");
+                input.setAttribute("id", `${key}.${subKey}.${fieldKey}`);
+                input.setAttribute("name", `${key}.${subKey}.${fieldKey}`);
+                input.setAttribute("value", fieldValue);
+                input.classList.add("form-control");
+
                 fieldInputCol.appendChild(input);
                 fieldRow.appendChild(fieldLabelCol);
                 fieldRow.appendChild(fieldInputCol);
@@ -1105,7 +1346,18 @@ function getSizeOfKey(key) {
 
 function showLoading() {
   console.log("Show loading modal...");
-  document.getElementById("loadingModal").style.display = "block";
+  const modal = document.getElementById("loadingModal");
+  modal.style.display = "block";
+  setTimeout(() => {
+    // Use computed style to check actual display value
+    const computedStyle = window.getComputedStyle(modal);
+    if (computedStyle.display === "block") {
+      modal.style.display = "none";
+      console.log("blocked");
+    } else {
+      console.log("loading modal was already hidden");
+    }
+  }, 10000);
 }
 
 function hideLoading() {
@@ -1114,362 +1366,374 @@ function hideLoading() {
 }
 
 async function SerialMonitor() {
-  try {
-    // Request access to the serial port
-    port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 9600 });
-    console.log("Serial port opened:", port.getInfo());
-    const textArea = document.getElementById("serial-output");
-    setDeviceStatus("Device Connected", "#439a43");
-    document.getElementById("deviceInfoContainer").style.display = "flex";
-    isDeviceConnected = true;
-    document.querySelectorAll(".console-buttons").forEach((button) => {
-      button.disabled = false;
-    });
-    if (refreshConfigForm) {
-      document.querySelectorAll(".reconnect-btn").forEach((button) => {
-        button.style.display = "none";
-      });
-      document.querySelectorAll(".loadMessageText").forEach((text) => {
-        text.textContent = "Please Click On Refresh";
-      });
-    }
-
-    await StopScript();
-    await SerialWrite(
-      `\x03\r\nimport ubinascii,network\r\na = ubinascii.hexlify(network.LAN().config('mac'), ':').decode().upper()\r\nprint(f"<>mac address : {a}<>")\r\nprint(f"<>board name : {machine.board_name()}<>")\r\n`
-    );
-    await RunScript();
-    // Set up a reader to continuously read from the serial port
-    const decoder = new TextDecoder();
-    reader = port.readable.getReader();
+  if (isDeviceConnected == true) {
+    document.getElementById("popup").textContent = "Device Already Connected";
+    showPopup("#e34c5a");
+  } else {
     try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          // Reader has been closed
-          break;
-        }
-        if (value) {
-          const Serialdata = decoder.decode(value);
-          // console.log(
-          //   `Size of terminal: ${
-          //     new TextEncoder().encode(textArea.textContent).length
-          //   } bytes`
-          // );
-          // Check if the text content size exceeds 100KB (102,400 bytes)
-          if (new TextEncoder().encode(textArea.textContent).length > 102400) {
-            console.log("Clearing terminal...");
-            const content = textArea.textContent;
-            let existingLogs = localStorage.getItem("logs");
-            if (existingLogs) {
-              const logsSize = getSizeOfKey("logs");
-              console.log(`Size of 'logs' key: ${logsSize} bytes`);
-              // Check if the local storage size exceeds 300KB (307,200 bytes)
-              if (logsSize > 307200) {
-                console.log(`Restarted Logs in localStorage`);
-                localStorage.setItem("logs", "");
-                existingLogs = content;
+      // Request access to the serial port
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      console.log("Serial port opened:", port.getInfo());
+      const textArea = document.getElementById("serial-output");
+      setDeviceStatus("Device Connected", "#439a43");
+      document.getElementById("deviceInfoContainer").style.display = "flex";
+      isDeviceConnected = true;
+      document.querySelectorAll(".console-buttons").forEach((button) => {
+        button.disabled = false;
+      });
+      if (refreshConfigForm) {
+        document.querySelectorAll(".reconnect-btn").forEach((button) => {
+          button.style.display = "none";
+        });
+        document.querySelectorAll(".loadMessageText").forEach((text) => {
+          text.textContent = "Please Click On Refresh";
+        });
+      }
+
+      await StopScript();
+      await SerialWrite(
+        `\x03\r\nimport ubinascii,machine,network\r\na = ubinascii.hexlify(network.LAN().config('mac'), ':').decode().upper() if hasattr(network, "LAN") else machine.unique_id()[4:].hex().upper()\r\nprint(f"<>mac address : {a}<>")\r\nprint(f"<>board name : {machine.board_name()}<>")\r\n`
+      );
+      await RunScript();
+      // Set up a reader to continuously read from the serial port
+      const decoder = new TextDecoder();
+      reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            // Reader has been closed
+            break;
+          }
+          if (value) {
+            const Serialdata = decoder.decode(value);
+            // console.log(
+            //   `Size of terminal: ${
+            //     new TextEncoder().encode(textArea.textContent).length
+            //   } bytes`
+            // );
+            // Check if the text content size exceeds 100KB (102,400 bytes)
+            if (
+              new TextEncoder().encode(textArea.textContent).length > 102400
+            ) {
+              console.log("Clearing terminal...");
+              const content = textArea.textContent;
+              let existingLogs = localStorage.getItem("logs");
+              if (existingLogs) {
+                const logsSize = getSizeOfKey("logs");
+                console.log(`Size of 'logs' key: ${logsSize} bytes`);
+                // Check if the local storage size exceeds 300KB (307,200 bytes)
+                if (logsSize > 307200) {
+                  console.log(`Restarted Logs in localStorage`);
+                  localStorage.setItem("logs", "");
+                  existingLogs = content;
+                } else {
+                  existingLogs += "\n" + content;
+                }
               } else {
-                existingLogs += "\n" + content;
+                existingLogs = content;
               }
-            } else {
-              existingLogs = content;
+              localStorage.setItem("logs", existingLogs);
+              clearTerminal();
             }
-            localStorage.setItem("logs", existingLogs);
-            clearTerminal();
-          }
-          textArea.textContent += Serialdata;
-          textArea.scrollTop = textArea.scrollHeight; // Auto-scroll to the bottom
-          const lines = textArea.textContent.split("\n");
-          for (const line of lines) {
-            if (!line.includes("print(")) {
-              const macMatch = line.match(/<>mac address\s*:\s*([^<>]+)\s*<>/);
-              if (macMatch) {
-                const mac_address = macMatch[1].trim();
-                renamed_mac_address = mac_address;
-                renamed_mac_address_unitId = mac_address
-                  .replace(/:/g, "")
-                  .toUpperCase();
-              }
-
-              const boardMatch = line.match(/<>board name\s*:\s*([^<>]+)\s*<>/);
-              if (boardMatch) {
-                const board_name = boardMatch[1].trim();
-                renamed_board_name = board_name;
-                setBoardName(renamed_board_name);
-              }
-            }
-          }
-          //check board name
-          // const namematch = textArea.textContent.match(
-          //   /<>board name\s*:\s*([^<>]+)\s*<>/
-          // );
-          // const macAddressMatch = textArea.textContent.match(
-          //   /<>mac address\s*:\s*([0-9A-Fa-f:]{17})<>/
-          // );
-          // if (macAddressMatch) {
-          //   const mac_address = macAddressMatch[1];
-          //   renamed_mac_address = mac_address.replace(/:/g, "").toUpperCase();
-          //   console.log(renamed_mac_address);
-          // }
-          // if (namematch) {
-          //   // Extract the matched portion and clean it up
-          //   const board_name = namematch[1].trim();
-          //   renamed_board_name = board_name;
-          //   setBoardName(renamed_board_name);
-          // Fetch product info from Flask
-          // fetch(`/api/product_info/${renamed}`)
-          //   .then((res) => res.json())
-          //   .then((data) => {
-          //     if (data.error) {
-          //       throw new Error(data.error);
-          //     }
-          //     // console.log(data);
-          //     // Set image
-          //     document.getElementById("boardImage").src = data.image;
-          //     // Load and insert table HTML
-          //     return fetch(data.table_url);
-          //   })
-          //   .then((res) => res.text())
-          //   .then((html) => {
-          //     document.getElementById("tableContainer").innerHTML = html;
-          //   })
-          //   .catch((err) => {
-          //     document.getElementById(
-          //       "tableContainer"
-          //     ).innerHTML = `<p style="color:red;">${err.message}</p>`;
-          //   });
-          // }
-          // Check flash status
-          if (
-            Serialdata.includes("VCPFLASH") ||
-            Serialdata.includes("VCP+MSCFLASH")
-          ) {
-            if (Serialdata.includes("VCP+MSCFLASH")) {
-              isFlashChecked = true;
-              const flashCheckbox = document.getElementById("flashCheckbox");
-              flashCheckbox.checked = isFlashChecked;
-              console.log("FLASH ENABLED");
-            } else {
-              isFlashChecked = false;
-              const flashCheckbox = document.getElementById("flashCheckbox");
-              flashCheckbox.checked = isFlashChecked;
-              console.log("FLASH DSIABLED");
-            }
-          }
-          if (captureFiles) {
-            dataBuffer += Serialdata;
-            // Match a valid list of tuples[('file1.txt', 123), ('file2.log', 456)]
-            const match = dataBuffer.match(
-              /\[\(('.*?', \d+)(?:, \('.*?', \d+\))*\)\]/
-            );
-            if (match) {
-              // Extract the matched portion and clean it up
-              console.log(" Data before Cleaning:", match[0]);
-              const cleanedData = match[0]
-                .replace(/'/g, '"') // Replace single quotes with double quotes
-                .replace(/\(/g, "[") // Replace opening tuple with opening array
-                .replace(/\)/g, "]"); // Replace closing tuple with closing array
-              console.log("Cleaned Data:", cleanedData);
-              fileList = JSON.parse(cleanedData);
-              console.log("Files list:", fileList);
-              document.getElementById("fileSystemLoadMessage").style.display =
-                "none";
-              document.getElementById("fileSystemTable").style.display =
-                "block";
-              document.getElementById("fileSystemContainerTable").style.height =
-                "100%";
-              document.getElementById(
-                "fileSystemContainerTable"
-              ).style.overflowY = "scroll";
-              const filesListContainer = document.getElementById("filesList");
-              filesListContainer.innerHTML = "";
-              fileList.forEach((file) => {
-                const fileName = file[0]; // First element of each array (file name)
-                const fileSize = file[1]; // Second element (file size)
-                const totalFileSize = fileSize / 1024;
-                const calcfileSize =
-                  fileSize / 1024 < 1
-                    ? "1 KB"
-                    : `${totalFileSize.toFixed(2)} KB`;
-                // Create a new table row
-                const row = document.createElement("tr");
-
-                // Create table cells for each file property
-                const imageCell = document.createElement("td");
-                const imageSrc = getFileImage(fileName);
-                imageCell.innerHTML = `<img src="${imageSrc}" alt="File icon" width="30" height="30">`;
-                row.appendChild(imageCell);
-
-                const fileCell = document.createElement("td");
-                fileCell.textContent = fileName;
-                row.appendChild(fileCell);
-
-                const typeCell = document.createElement("td");
-                const fileExtension = fileName.split(".").pop().toLowerCase();
-                const fileType = getFileType(fileExtension);
-                typeCell.textContent = fileType;
-                row.appendChild(typeCell);
-
-                const sizeCell = document.createElement("td");
-                sizeCell.textContent = calcfileSize;
-                row.appendChild(sizeCell);
-
-                // Append the row to the table body
-                filesListContainer.appendChild(row);
-              });
-              captureFiles = false; // Stop capturing after extracting the list
-              dataBuffer = ""; // Clear the buffer after processing
-            }
-          }
-          if (Filecheck) {
-            dataBuffer += Serialdata;
-            let match = dataBuffer.match(/(CONFIG0|CONFIG1)(?!')/);
-            if (match) {
-              Filecheck = false;
-              dataBuffer = "";
-              console.log(match[0]);
-              if (match[0] == "CONFIG1") {
-                configuration = true;
-                // Python command to get config parameters from file
-                await SerialWrite(
-                  `\x03\r\nf=open('config.py')\r\nprint("=-={}=-=".format(f.read()))\r\n`
+            textArea.textContent += Serialdata;
+            textArea.scrollTop = textArea.scrollHeight; // Auto-scroll to the bottom
+            const lines = textArea.textContent.split("\n");
+            for (const line of lines) {
+              if (!line.includes("print(")) {
+                const macMatch = line.match(
+                  /<>mac address\s*:\s*([^<>]+)\s*<>/
                 );
-              }
-              if (match[0] == "CONFIG0") {
-                configuration = true;
-                // Python command to get config parameters from module
-                await SerialWrite(
-                  `\x03\r\nimport config\r\nprint("=-=\n{}=-=".format("\n".join([f"{attribute} = {getattr(config, attribute)}" if isinstance(getattr(config, attribute), list) else f"{attribute} = '{getattr(config, attribute)}'" for attribute in dir(config) if attribute.startswith('PYTRO_')])))\r\n`
+                if (macMatch) {
+                  const mac_address = macMatch[1].trim();
+                  renamed_mac_address = mac_address;
+                  renamed_mac_address_unitId = mac_address
+                    .replace(/:/g, "")
+                    .toUpperCase();
+                }
+
+                const boardMatch = line.match(
+                  /<>board name\s*:\s*([^<>]+)\s*<>/
                 );
+                if (boardMatch) {
+                  const board_name = boardMatch[1].trim();
+                  renamed_board_name = board_name;
+                  setBoardName(renamed_board_name);
+                }
               }
             }
-          }
-          if (configuration) {
-            dataBuffer += Serialdata;
-            // console.log("CONFIG DATA BUFFER :", dataBuffer);
-            const match = dataBuffer.match(/=-=([\s\S]*)=-=/);
-            if (match) {
-              // Extract the matched portion and clean it up
-              // console.log("DATA EXTRACTED:", match[0]);
-              const contentBetweenQuotes = match[0]; // Extract content between quotes
-              // Check if the content matches the key-value pair pattern
-              const pattern =
-                /(PYTRO_\w+)\s*=\s*(\d+|'[^']+'|\[\s*'[^']+'\s*(?:,\s*'[^']+'\s*)*\]|\{[\s\S]*?\})/g;
-              const keyValueMatches = [
-                ...contentBetweenQuotes.matchAll(pattern),
-              ];
-              // If the content contains key-value pairs, process it
-              if (keyValueMatches.length > 4) {
-                // console.log("CONTENT BETWEEN QUOTES:", contentBetweenQuotes);
-                // Loop through matches and extract the key-value pairs
-                keyValueMatches.forEach((matchData) => {
-                  const key = matchData[1].trim(); // Extract key (e.g., 'key1')
-                  const value = matchData[2].trim(); // Extract value (e.g., 'value1')
-                  if (key && value) {
-                    // Clean up the key and value, and store them
-                    const TreatedVal = value.replace(/^'(.*)'$/, "$1");
-                    try {
-                      if (
-                        TreatedVal.startsWith("{") ||
-                        TreatedVal.startsWith("[")
-                      ) {
-                        // Replace all single quotes with double quotes ONLY if it's not already valid JSON
-                        const safeJson = TreatedVal.replace(/'/g, '"');
-                        configParameters[key] = JSON.parse(safeJson);
-                      } else {
+            //check board name
+            // const namematch = textArea.textContent.match(
+            //   /<>board name\s*:\s*([^<>]+)\s*<>/
+            // );
+            // const macAddressMatch = textArea.textContent.match(
+            //   /<>mac address\s*:\s*([0-9A-Fa-f:]{17})<>/
+            // );
+            // if (macAddressMatch) {
+            //   const mac_address = macAddressMatch[1];
+            //   renamed_mac_address = mac_address.replace(/:/g, "").toUpperCase();
+            //   console.log(renamed_mac_address);
+            // }
+            // if (namematch) {
+            //   // Extract the matched portion and clean it up
+            //   const board_name = namematch[1].trim();
+            //   renamed_board_name = board_name;
+            //   setBoardName(renamed_board_name);
+            // Fetch product info from Flask
+            // fetch(`/api/product_info/${renamed}`)
+            //   .then((res) => res.json())
+            //   .then((data) => {
+            //     if (data.error) {
+            //       throw new Error(data.error);
+            //     }
+            //     // console.log(data);
+            //     // Set image
+            //     document.getElementById("boardImage").src = data.image;
+            //     // Load and insert table HTML
+            //     return fetch(data.table_url);
+            //   })
+            //   .then((res) => res.text())
+            //   .then((html) => {
+            //     document.getElementById("tableContainer").innerHTML = html;
+            //   })
+            //   .catch((err) => {
+            //     document.getElementById(
+            //       "tableContainer"
+            //     ).innerHTML = `<p style="color:red;">${err.message}</p>`;
+            //   });
+            // }
+            // Check flash status
+            if (
+              Serialdata.includes("VCPFLASH") ||
+              Serialdata.includes("VCP+MSCFLASH")
+            ) {
+              if (Serialdata.includes("VCP+MSCFLASH")) {
+                isFlashChecked = true;
+                const flashCheckbox = document.getElementById("flashCheckbox");
+                flashCheckbox.checked = isFlashChecked;
+                console.log("FLASH ENABLED");
+              } else {
+                isFlashChecked = false;
+                const flashCheckbox = document.getElementById("flashCheckbox");
+                flashCheckbox.checked = isFlashChecked;
+                console.log("FLASH DSIABLED");
+              }
+            }
+            if (captureFiles) {
+              dataBuffer += Serialdata;
+              // Match a valid list of tuples[('file1.txt', 123), ('file2.log', 456)]
+              const match = dataBuffer.match(
+                /\[\(('.*?', \d+)(?:, \('.*?', \d+\))*\)\]/
+              );
+              if (match) {
+                // Extract the matched portion and clean it up
+                console.log(" Data before Cleaning:", match[0]);
+                const cleanedData = match[0]
+                  .replace(/'/g, '"') // Replace single quotes with double quotes
+                  .replace(/\(/g, "[") // Replace opening tuple with opening array
+                  .replace(/\)/g, "]"); // Replace closing tuple with closing array
+                console.log("Cleaned Data:", cleanedData);
+                fileList = JSON.parse(cleanedData);
+                console.log("Files list:", fileList);
+                document.getElementById("fileSystemLoadMessage").style.display =
+                  "none";
+                document.getElementById("fileSystemTable").style.display =
+                  "block";
+                document.getElementById(
+                  "fileSystemContainerTable"
+                ).style.height = "100%";
+                document.getElementById(
+                  "fileSystemContainerTable"
+                ).style.overflowY = "scroll";
+                const filesListContainer = document.getElementById("filesList");
+                filesListContainer.innerHTML = "";
+                fileList.forEach((file) => {
+                  const fileName = file[0]; // First element of each array (file name)
+                  const fileSize = file[1]; // Second element (file size)
+                  const totalFileSize = fileSize / 1024;
+                  const calcfileSize =
+                    fileSize / 1024 < 1
+                      ? "1 KB"
+                      : `${totalFileSize.toFixed(2)} KB`;
+                  // Create a new table row
+                  const row = document.createElement("tr");
+
+                  // Create table cells for each file property
+                  const imageCell = document.createElement("td");
+                  const imageSrc = getFileImage(fileName);
+                  imageCell.innerHTML = `<img src="${imageSrc}" alt="File icon" width="30" height="30">`;
+                  row.appendChild(imageCell);
+
+                  const fileCell = document.createElement("td");
+                  fileCell.textContent = fileName;
+                  row.appendChild(fileCell);
+
+                  const typeCell = document.createElement("td");
+                  const fileExtension = fileName.split(".").pop().toLowerCase();
+                  const fileType = getFileType(fileExtension);
+                  typeCell.textContent = fileType;
+                  row.appendChild(typeCell);
+
+                  const sizeCell = document.createElement("td");
+                  sizeCell.textContent = calcfileSize;
+                  row.appendChild(sizeCell);
+
+                  // Append the row to the table body
+                  filesListContainer.appendChild(row);
+                });
+                captureFiles = false; // Stop capturing after extracting the list
+                dataBuffer = ""; // Clear the buffer after processing
+              }
+            }
+            if (Filecheck) {
+              dataBuffer += Serialdata;
+              let match = dataBuffer.match(/(CONFIG0|CONFIG1)(?!')/);
+              if (match) {
+                Filecheck = false;
+                dataBuffer = "";
+                console.log(match[0]);
+                if (match[0] == "CONFIG1") {
+                  configuration = true;
+                  // Python command to get config parameters from file
+                  await SerialWrite(
+                    `\x03\r\nf=open('config.py')\r\nprint("=-={}=-=".format(f.read()))\r\n`
+                  );
+                }
+                if (match[0] == "CONFIG0") {
+                  configuration = true;
+                  // Python command to get config parameters from module
+                  await SerialWrite(
+                    `\x03\r\nimport config\r\nprint("=-=\n{}=-=".format("\n".join([f"{attribute} = {getattr(config, attribute)}" if isinstance(getattr(config, attribute), list) else f"{attribute} = '{getattr(config, attribute)}'" for attribute in dir(config) if attribute.startswith('PYTRO_')])))\r\n`
+                  );
+                }
+              }
+            }
+            if (configuration) {
+              dataBuffer += Serialdata;
+              // console.log("CONFIG DATA BUFFER :", dataBuffer);
+              const match = dataBuffer.match(/=-=([\s\S]*)=-=/);
+              if (match) {
+                // Extract the matched portion and clean it up
+                // console.log("DATA EXTRACTED:", match[0]);
+                const contentBetweenQuotes = match[0]; // Extract content between quotes
+                // Check if the content matches the key-value pair pattern
+                const pattern =
+                  /(PYTRO_\w+)\s*=\s*(\d+|'[^']+'|\[\s*'[^']+'\s*(?:,\s*'[^']+'\s*)*\]|\{[\s\S]*?\})/g;
+                const keyValueMatches = [
+                  ...contentBetweenQuotes.matchAll(pattern),
+                ];
+                // If the content contains key-value pairs, process it
+                if (keyValueMatches.length > 4) {
+                  // console.log("CONTENT BETWEEN QUOTES:", contentBetweenQuotes);
+                  // Loop through matches and extract the key-value pairs
+                  keyValueMatches.forEach((matchData) => {
+                    const key = matchData[1].trim(); // Extract key (e.g., 'key1')
+                    const value = matchData[2].trim(); // Extract value (e.g., 'value1')
+                    if (key && value) {
+                      // Clean up the key and value, and store them
+                      const TreatedVal = value.replace(/^'(.*)'$/, "$1");
+                      try {
+                        if (
+                          TreatedVal.startsWith("{") ||
+                          TreatedVal.startsWith("[")
+                        ) {
+                          // Replace all single quotes with double quotes ONLY if it's not already valid JSON
+                          const safeJson = TreatedVal.replace(/'/g, '"');
+                          configParameters[key] = JSON.parse(safeJson);
+                        } else {
+                          configParameters[key] = TreatedVal;
+                        }
+                      } catch (e) {
+                        console.error(
+                          `Error parsing key "${key}" with value:`,
+                          value,
+                          e
+                        );
                         configParameters[key] = TreatedVal;
                       }
-                    } catch (e) {
-                      console.error(
-                        `Error parsing key "${key}" with value:`,
-                        value,
-                        e
-                      );
-                      configParameters[key] = TreatedVal;
                     }
-                  }
-                });
-                console.log("DATA AFTER CLEANING:", configParameters);
-                // showLoading();
-                fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
-                  .then((res) => res.json())
-                  .then((data) => {
-                    // Apply configParameters to appData
-                    data.apps.forEach((appObj) => {
-                      const appKey = Object.keys(appObj)[0];
-                      const appData = appObj[appKey];
+                  });
+                  console.log("DATA AFTER CLEANING:", configParameters);
+                  // showLoading();
+                  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                      // Apply configParameters to appData
+                      data.apps.forEach((appObj) => {
+                        const appKey = Object.keys(appObj)[0];
+                        const appData = appObj[appKey];
 
-                      for (const configKey in configParameters) {
-                        if (
-                          configParameters.hasOwnProperty(configKey) &&
-                          configKey.startsWith(appKey + "_")
-                        ) {
-                          appData[configKey] = configParameters[configKey];
+                        for (const configKey in configParameters) {
+                          if (
+                            configParameters.hasOwnProperty(configKey) &&
+                            configKey.startsWith(appKey + "_")
+                          ) {
+                            appData[configKey] = configParameters[configKey];
+                          }
                         }
+                      });
+
+                      // Send updated data to server
+                      return fetch("/update-apps", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          mac: renamed_mac_address,
+                          apps: data.apps,
+                          unitId: renamed_mac_address_unitId,
+                          board: renamed_board_name,
+                        }),
+                      });
+                    })
+                    .then((res) => res.json())
+                    .then((result) => {
+                      if (result.status === "success") {
+                        console.log(
+                          "Updated successfully, now fetching again..."
+                        );
+                        return fetch(
+                          `/get-data?macId=${renamed_mac_address_unitId}`
+                        ); // Only fetch again after successful update
+                      } else {
+                        throw new Error("Update failed: " + result.message);
                       }
-                    });
-
-                    // Send updated data to server
-                    return fetch("/update-apps", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        mac: renamed_mac_address,
-                        apps: data.apps,
-                        unitId: renamed_mac_address_unitId,
-                        board: renamed_board_name,
-                      }),
-                    });
-                  })
-                  .then((res) => res.json())
-                  .then((result) => {
-                    if (result.status === "success") {
-                      console.log(
-                        "Updated successfully, now fetching again..."
+                    })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      // ✅ Now handle rendering after fresh fetch
+                      const storeContainer = document.getElementById(
+                        "apps-store-container"
                       );
-                      return fetch(
-                        `/get-data?macId=${renamed_mac_address_unitId}`
-                      ); // Only fetch again after successful update
-                    } else {
-                      throw new Error("Update failed: " + result.message);
-                    }
-                  })
-                  .then((res) => res.json())
-                  .then((data) => {
-                    // ✅ Now handle rendering after fresh fetch
-                    const storeContainer = document.getElementById(
-                      "apps-store-container"
-                    );
-                    const installedContainer = document.getElementById(
-                      "apps-installed-container"
-                    );
+                      const installedContainer = document.getElementById(
+                        "apps-installed-container"
+                      );
 
-                    const boardInfo = `
+                      const boardInfo = `
                       <h6>Board Name : <strong>${renamed_board_name}</strong></h6>
                       <h6>Board ID : <strong>${data.unitId}</strong></h6>
                     `;
-                    storeContainer.innerHTML = boardInfo;
-                    installedContainer.innerHTML = boardInfo;
+                      storeContainer.innerHTML = boardInfo;
+                      installedContainer.innerHTML = boardInfo;
 
-                    let rowsHTML = "";
-                    data.apps.forEach((appObj) => {
-                      const appKey = Object.keys(appObj)[0];
-                      const appData = appObj[appKey];
-                      const name = appData.NAME || appKey.replaceAll("_", " ");
-                      const description =
-                        appData.DESCRIPTION || "Description Not Available";
-                      const publisher =
-                        appData.PUBLISHER || "Publisher Not Available";
-                      const category =
-                        appData.CATEGORY || "Category Not Available";
-                      const size = appData.SIZE
-                        ? `${appData.SIZE} MB`
-                        : "Size Not Available";
-                      const enableField = appKey + "_ENABLE";
+                      let rowsHTML = "";
+                      data.apps.forEach((appObj) => {
+                        const appKey = Object.keys(appObj)[0];
+                        const appData = appObj[appKey];
+                        const name =
+                          appData.NAME || appKey.replaceAll("_", " ");
+                        const description =
+                          appData.DESCRIPTION || "Description Not Available";
+                        const publisher =
+                          appData.PUBLISHER || "Publisher Not Available";
+                        const category =
+                          appData.CATEGORY || "Category Not Available";
+                        const size = appData.SIZE
+                          ? `${appData.SIZE} MB`
+                          : "Size Not Available";
+                        const enableField = appKey + "_ENABLE";
 
-                      const appHTML = `
+                        const appHTML = `
                         <div class="d-flex flex-column flex-md-row justify-content-md-between store-apps-border gap-3 gap-md-0">
                           <div class="d-flex gap-4 flex-85">
                             <div>
@@ -1501,22 +1765,23 @@ async function SerialMonitor() {
                           </div>
                         </div>
                       `;
-                      storeContainer.innerHTML += appHTML;
-                      const icons = document.querySelectorAll(".terminal-icon");
-                      icons.forEach(function (icon) {
-                        icon.style.color = getRandomColor();
-                      });
+                        storeContainer.innerHTML += appHTML;
+                        const icons =
+                          document.querySelectorAll(".terminal-icon");
+                        icons.forEach(function (icon) {
+                          icon.style.color = getRandomColor();
+                        });
 
-                      // Installed apps table
-                      if (
-                        appData[enableField] &&
-                        appData[enableField].toUpperCase() === "ON"
-                      ) {
-                        rowsHTML += `
+                        // Installed apps table
+                        if (
+                          appData[enableField] &&
+                          appData[enableField].toUpperCase() === "ON"
+                        ) {
+                          rowsHTML += `
                           <tr>
                             <td class="fw-medium">${name}</td>
                             <td>${size}</td>
-                            <td>${category}</td>
+                            <td style="width:30%">${description}</td>
                             <td><span class="status-running">Running</span></td>
                             <td>
                               <div class="d-flex flex-column justify-content-center flex-md-row gap-2">
@@ -1527,19 +1792,19 @@ async function SerialMonitor() {
                             </td>
                           </tr>
                         `;
+                        }
+                      });
+
+                      if (!rowsHTML) {
+                        rowsHTML = `<tr><td colspan="5" class="text-center">No apps enabled.</td></tr>`;
                       }
-                    });
 
-                    if (!rowsHTML) {
-                      rowsHTML = `<tr><td colspan="5" class="text-center">No apps enabled.</td></tr>`;
-                    }
-
-                    installedContainer.innerHTML += `
+                      installedContainer.innerHTML += `
                       <div class="table-responsive">
                         <table class="table table-hover apps-table">
                           <thead class="table-light">
                             <tr>
-                              <th>Name</th><th>Size</th><th>Category</th><th>Status</th><th>Actions</th>
+                              <th>Name</th><th>Size</th><th>Description</th><th>Status</th><th>Actions</th>
                             </tr>
                           </thead>
                           <tbody>${rowsHTML}</tbody>
@@ -1547,39 +1812,60 @@ async function SerialMonitor() {
                       </div>
                     `;
 
-                    // Final cleanup
-                    dataBuffer = "";
-                    configuration = false;
-                    configParameters = {};
-                    console.log("Done CLEANING:", configParameters);
-                  })
-                  .catch((err) => {
-                    console.error("Something failed:", err);
-                    document.getElementById(
-                      "apps-installed-container"
-                    ).innerHTML =
-                      "<span class='d-flex justify-content-center'>Failed to load data.</span>";
-                    document.getElementById("apps-store-container").innerHTML =
-                      "<span class='d-flex justify-content-center'>Failed to load data.</span>";
-                  })
-                  .finally(() => {
-                    hideLoading();
-                  });
+                      // Final cleanup
+                      dataBuffer = "";
+                      configuration = false;
+                      configParameters = {};
+                      console.log("Done CLEANING:", configParameters);
+                    })
+                    .catch((err) => {
+                      console.error("Something failed:", err);
+                      document.getElementById(
+                        "apps-installed-container"
+                      ).innerHTML =
+                        "<span class='d-flex justify-content-center'>Failed to load data.</span>";
+                      document.getElementById(
+                        "apps-store-container"
+                      ).innerHTML =
+                        "<span class='d-flex justify-content-center'>Failed to load data.</span>";
+                    })
+                    .finally(() => {
+                      hideLoading();
+                    });
 
-                // After extracting the configuration, update the form display
-                generateForm(configParameters);
-                document
-                  .querySelectorAll(".configForm-buttons")
-                  .forEach((button) => {
-                    button.style.display = "block";
-                  });
+                  // After extracting the configuration, update the form display
+                  generateForm(configParameters);
+                  document
+                    .querySelectorAll(".configForm-buttons")
+                    .forEach((button) => {
+                      button.style.display = "block";
+                    });
+                }
               }
             }
           }
         }
+      } catch (err) {
+        console.error("Error while reading from the serial port:", err);
+        setDeviceStatus("Device Disconnected", "#e34c5a");
+        isDeviceConnected = false;
+        document.getElementById("popup").textContent = err;
+        showPopup("rgba(0, 0, 0, 0.8)");
+        document.querySelectorAll(".console-buttons").forEach((button) => {
+          button.disabled = true;
+        });
+        document.getElementById("configFormDataContainer").style.display =
+          "none";
+        document.querySelectorAll(".configForm-buttons").forEach((button) => {
+          button.style.display = "none";
+        });
+        setBoardName("(Not connected)");
+        hideLoading();
+      } finally {
+        reader.releaseLock();
       }
     } catch (err) {
-      console.error("Error while reading from the serial port:", err);
+      console.error("Failed to communicate with the serial port:", err);
       setDeviceStatus("Device Disconnected", "#e34c5a");
       isDeviceConnected = false;
       document.getElementById("popup").textContent = err;
@@ -1593,50 +1879,100 @@ async function SerialMonitor() {
       });
       setBoardName("(Not connected)");
       hideLoading();
-    } finally {
-      reader.releaseLock();
     }
-  } catch (err) {
-    console.error("Failed to communicate with the serial port:", err);
-    setDeviceStatus("Device Disconnected", "#e34c5a");
-    isDeviceConnected = false;
-    document.getElementById("popup").textContent = err;
-    showPopup("rgba(0, 0, 0, 0.8)");
-    document.querySelectorAll(".console-buttons").forEach((button) => {
-      button.disabled = true;
-    });
-    document.getElementById("configFormDataContainer").style.display = "none";
-    document.querySelectorAll(".configForm-buttons").forEach((button) => {
-      button.style.display = "none";
-    });
-    setBoardName("(Not connected)");
-    hideLoading();
   }
 }
 
-async function saveToConfigFile(mergedConfig) {
-  let formattedApps = "";
-  for (let [key, value] of Object.entries(mergedConfig)) {
-    if (key === "PYTRO_DMM_REGDICT" || key === "PYTRO_DMM_EVENTDICT") {
-      // Convert PYTRO_DMM_REGDICT to JSON with double quotes inside, single quotes outside
-      const jsonStr = JSON.stringify(value); // JSON.stringify will handle double quotes inside
-      formattedApps += `${key} = '${jsonStr.replace(/'/g, "\\'")}'\\r\\n`;
-    } else if (typeof value === "object") {
-      // Handle other objects (like arrays from selects) using single quotes inside
-      const objectString = JSON.stringify(value).replace(/"/g, "'");
-      formattedApps += `${key} = ${objectString}\\r\\n`;
-    } else if (value.trim() === "") {
-      formattedApps += `${key} = ''\\r\\n`;
-    } else {
-      formattedApps += `${key} = '${value}'\\r\\n`;
+async function saveToConfigFile(mergedConfig, popupTitle, popupBackground) {
+  // Step 1: Get keys ending in _ENABLE and derive app names
+  const enableKeys = Object.keys(mergedConfig).filter((key) =>
+    key.includes("_ENABLE")
+  );
+  const cleanedKeys = enableKeys.map((key) => key.replace("_ENABLE", ""));
+  // Step 2: Create an empty object to store the structured apps
+  let structuredConfig = {};
+  // Step 3: Group each app into its own object based on cleaned keys
+  for (let cleanedKey of cleanedKeys) {
+    structuredConfig[cleanedKey] = {};
+
+    // For each app, add all its settings
+    for (let [key, value] of Object.entries(mergedConfig)) {
+      if (key.startsWith(cleanedKey)) {
+        // const newKey = key.replace(cleanedKey + "_", ""); // Remove the component prefix
+        structuredConfig[cleanedKey][key] = value;
+      }
     }
   }
+  console.log("the structuredConfig:", structuredConfig);
+  // Create a formatted string to save
+  let formattedApps = "";
+  for (let [appKey, appValue] of Object.entries(structuredConfig)) {
+    for (let [key, value] of Object.entries(appValue)) {
+      if (structuredConfig[appKey][`${appKey}_ENABLE`] === "ON") {
+        //   console.log(`the enabled apps ${appKey}_ENABLE`);
+
+        if (key.includes("DICT")) {
+          // Convert PYTRO_DMM_REGDICT to JSON with double quotes inside, single quotes outside
+          const jsonStr = JSON.stringify(value); // JSON.stringify will handle double quotes inside
+          formattedApps += `${key} = '${jsonStr.replace(/'/g, "\\'")}'\\r\\n`;
+        } else if (typeof value === "object") {
+          // Handle other objects (like arrays from selects) using single quotes inside
+          const objectString = JSON.stringify(value).replace(/"/g, "'");
+          formattedApps += `${key} = ${objectString}\\r\\n`;
+        } else if (value.trim() === "") {
+          formattedApps += `${key} = ''\\r\\n`;
+        } else {
+          formattedApps += `${key} = '${value}'\\r\\n`;
+        }
+      } else {
+        // In the else condition, add the _ENABLE keys that are "OFF"
+        if (key === `${appKey}_ENABLE`) {
+          formattedApps += `${key} = '${value}'\\r\\n`;
+        }
+      }
+    }
+  }
+  console.log("formattedApps:", formattedApps);
+  // Split into lines, *keeping* the \r\n at the end of each line
+  const lines = formattedApps.split(/(?<=\\r\\n)/);
+  // console.log(lines); // each element ends with "\r\n"
   await StopScript();
   await sleep(100);
   try {
+    // await SerialWrite(
+    //   `import os\r\nos.remove('config.py')\r\nf=open('config.py','w')\r\nf.write('''${formattedApps}''')\r\nf.close()\r\n`
+    // );
+    showLoading();
     await SerialWrite(
-      `import os\r\nos.remove('config.py')\r\nf=open('config.py','w')\r\nf.write('''${formattedApps}''')\r\nf.close()\r\n`
+      `import os\r\nos.remove('config.py')\r\nf=open('config.py','w')\r\n`
     );
+    // // send in slices
+    // const chunkSize = 500;
+    // for (let i = 0; i < formattedApps.length; i += chunkSize) {
+    //   const chunk = formattedApps.slice(i, i + chunkSize);
+    //   await SerialWrite(`f.write('''${chunk}''')`);
+    //   await SerialWrite(`\r\n`);
+    //   // await sleep(100); // give REPL time
+    // }
+    // await SerialWrite("f.close()\r\n");
+    let buffer = "";
+    for (let line of lines) {
+      if ((buffer + line).length > 800) {
+        // send current buffer
+        await SerialWrite(`f.write('''${buffer}''')`);
+        await SerialWrite(`\r\n`);
+        buffer = "";
+      }
+      buffer += line;
+    }
+    // send remaining buffer if any
+    if (buffer.length > 0) {
+      await SerialWrite(`f.write('''${buffer}''')`);
+      await SerialWrite(`\r\n`);
+    }
+    await SerialWrite("f.close()\r\n");
+    document.getElementById("popup").textContent = popupTitle;
+    showPopup(popupBackground);
   } catch (err) {
     console.error("Error updating config.py:", err);
   }
@@ -1654,31 +1990,47 @@ function mergedToConfig(mergedConfig, data) {
   });
 }
 
-function renumberRegisterBlockRows() {
-  const tbody = document.getElementById("registerBlockBody");
+function renumberRegisterBlockRows(regDict) {
+  const tbody =
+    regDict === "PYTRO_DMM_REGDICT"
+      ? document.getElementById("DMMregisterBlockBody")
+      : regDict === "PYTRO_RMM4_REGDICT"
+      ? document.getElementById("RMM4registerBlockBody")
+      : document.getElementById("MRH4registerBlockBody");
   const rows = tbody.querySelectorAll("tr");
   rows.forEach((row, index) => {
     const blockNumber = index + 1;
-    const blockPrefix = `PYTRO_DMM_REGDICT.${blockNumber}`;
+    const blockPrefix = `${regDict}.${blockNumber}`;
     const inputs = row.querySelectorAll("input, select");
     const cells = row.querySelectorAll("td");
     // Update block number cell
     cells[0].innerText = blockNumber;
     // Update name attributes
-    inputs[0].name = `${blockPrefix}.OFFSET`;
-    inputs[1].name = `${blockPrefix}.NUMREG`;
-    inputs[2].name = `${blockPrefix}.FORMAT`;
+    if (regDict === "PYTRO_DMM_REGDICT" || regDict === "PYTRO_RMM4_REGDICT") {
+      inputs[0].name = `${blockPrefix}.OFFSET`;
+      inputs[1].name = `${blockPrefix}.NUMREG`;
+      inputs[2].name = `${blockPrefix}.FORMAT`;
+    } else if (regDict === "PYTRO_MRH4_REGDICT") {
+      // For MRH4, use OFFSET and NODE_ID
+      inputs[0].name = `${blockPrefix}.OFFSET`;
+      inputs[1].name = `${blockPrefix}.NODE_ID`;
+    }
   });
 }
 
-function addRegisterBlockRow() {
-  const tbody = document.getElementById("registerBlockBody");
+function addRegisterBlockRow(regDict) {
+  const tbody =
+    regDict === "PYTRO_DMM_REGDICT"
+      ? document.getElementById("DMMregisterBlockBody")
+      : regDict === "PYTRO_RMM4_REGDICT"
+      ? document.getElementById("RMM4registerBlockBody")
+      : document.getElementById("MRH4registerBlockBody");
   const rows = tbody.querySelectorAll("tr");
   const newRowIndex = tbody.rows.length + 1;
-  const blockKey = `PYTRO_DMM_REGDICT.${newRowIndex}`;
+  const blockKey = `${regDict}.${newRowIndex}`;
   // Compute new OFFSET based on previous row
   let newOffset = "";
-  if (rows.length > 0) {
+  if (rows.length > 0 && regDict !== "PYTRO_MRH4_REGDICT") {
     const lastRow = rows[rows.length - 1];
     const lastOffsetInput = lastRow.querySelector("input[name$='.OFFSET']");
     const lastNumregInput = lastRow.querySelector("input[name$='.NUMREG']");
@@ -1689,7 +2041,16 @@ function addRegisterBlockRow() {
     }
   }
   const newRow = document.createElement("tr");
-  newRow.innerHTML = `
+  if (regDict === "PYTRO_MRH4_REGDICT") {
+    // For MRH4, use OFFSET and NODE_ID
+    newRow.innerHTML = `
+      <td>${newRowIndex}</td>
+      <td><input type="text" class="form-control" name="${blockKey}.OFFSET" value="${newOffset}"></td>
+      <td><input type="text" class="form-control" name="${blockKey}.NODE_ID" value=""></td>
+      <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, '${regDict}')"><i class="fa fa-minus-circle"></i></button></td>
+    `;
+  } else {
+    newRow.innerHTML = `
     <td>${newRowIndex}</td>
     <td><input type="text" class="form-control" name="${blockKey}.OFFSET" value="${newOffset}"></td>
     <td><input type="text" class="form-control numreg-input" name="${blockKey}.NUMREG" value=""></td>
@@ -1701,17 +2062,20 @@ function addRegisterBlockRow() {
         <option value="Float">Float</option>
       </select>
     </td>
-    <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, '${regDict}')"><i class="fa fa-minus-circle"></i></button></td>
   `;
+  }
   tbody.appendChild(newRow);
-  renumberRegisterBlockRows();
+  renumberRegisterBlockRows(regDict);
   // Add JS validation in case the user manually types more than 50
-  const numregInput = newRow.querySelector(".numreg-input");
-  numregInput.addEventListener("input", () => {
-    if (parseInt(numregInput.value) > 50) {
-      numregInput.value = 50;
-    }
-  });
+  if (regDict !== "PYTRO_MRH4_REGDICT") {
+    const numregInput = newRow.querySelector(".numreg-input");
+    numregInput.addEventListener("input", () => {
+      if (parseInt(numregInput.value) > 50) {
+        numregInput.value = 50;
+      }
+    });
+  }
   const offsetInput = newRow.querySelector('input[name$=".OFFSET"]');
   offsetInput.addEventListener("input", () => {
     const offsetInputValue = offsetInput.value;
@@ -1720,12 +2084,18 @@ function addRegisterBlockRow() {
       document.getElementById("offsetValueError").innerText =
         offsetValueForError;
       document.getElementById("submitInEditModal").disabled = true;
-      document.getElementById("AddBlockInEditModal").disabled = true;
+      // document.getElementById("AddBlockInEditModal").disabled = true;
+      document.querySelectorAll(".AddBlockInEditModal").forEach((button) => {
+        button.disabled = true;
+      });
       document.getElementById("offsetErrorContainer").style.display = "flex";
     } else {
       offsetValueForError = 0;
       document.getElementById("submitInEditModal").disabled = false;
-      document.getElementById("AddBlockInEditModal").disabled = false;
+      // document.getElementById("AddBlockInEditModal").disabled = false;
+      document.querySelectorAll(".AddBlockInEditModal").forEach((button) => {
+        button.disabled = false;
+      });
       document.getElementById("offsetErrorContainer").style.display = "none";
     }
   });
@@ -1820,10 +2190,10 @@ function addEventBlockRow() {
   });
 }
 
-function removeRegisterBlockRow(button) {
+function removeRegisterBlockRow(button, regDict) {
   const row = button.closest("tr");
   if (row) row.remove();
-  renumberRegisterBlockRows();
+  renumberRegisterBlockRows(regDict);
 }
 
 function removeEventBlockRow(button) {
@@ -1873,7 +2243,7 @@ function editApp(appKey) {
                 <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.OFFSET" value="${OFFSET}"></td>
                 <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.NUMREG" value="${NUMREG}"></td>
                 <td><input type="text" class="form-control" disabled name="PYTRO_DMM_REGDICT.${blockKey}.FORMAT" value="${FORMAT}"></td>
-                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, 'PYTRO_DMM_REGDICT')"><i class="fa fa-minus-circle"></i></button></td>
               </tr>
             `);
           });
@@ -1913,13 +2283,54 @@ function editApp(appKey) {
           );
         }
       }
+      if (appKey === "PYTRO_RMM4") {
+        try {
+          const regDict = fields.PYTRO_RMM4_REGDICT;
+
+          Object.keys(regDict).forEach((blockKey) => {
+            const block = regDict[blockKey];
+            const { OFFSET, NUMREG, FORMAT } = block;
+
+            regDictNestedTables.push(`
+              <tr>
+                <td><strong>${blockKey}</strong></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_RMM4_REGDICT.${blockKey}.OFFSET" value="${OFFSET}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_RMM4_REGDICT.${blockKey}.NUMREG" value="${NUMREG}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_RMM4_REGDICT.${blockKey}.FORMAT" value="${FORMAT}"></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, 'PYTRO_RMM4_REGDICT')"><i class="fa fa-minus-circle"></i></button></td>
+              </tr>
+            `);
+          });
+        } catch (error) {
+          console.error("Error parsing PYTRO_RMM4_REGDICT:", error);
+        }
+      }
+      if (appKey === "PYTRO_MRH4") {
+        try {
+          const regDict = fields.PYTRO_MRH4_REGDICT;
+
+          Object.keys(regDict).forEach((blockKey) => {
+            const block = regDict[blockKey];
+            const { OFFSET, NODE_ID } = block;
+
+            regDictNestedTables.push(`
+              <tr>
+                <td><strong>${blockKey}</strong></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_MRH4_REGDICT.${blockKey}.OFFSET" value="${OFFSET}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_MRH4_REGDICT.${blockKey}.NODE_ID" value="${NODE_ID}"></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, 'PYTRO_MRH4_REGDICT')"><i class="fa fa-minus-circle"></i></button></td>
+              </tr>
+            `);
+          });
+        } catch (error) {
+          console.error("Error parsing PYTRO_MRH4_REGDICT:", error);
+        }
+      }
 
       // --- Generate editable input fields ---
       for (const [key, value] of Object.entries(fields)) {
         if (
           key.startsWith(appKey + "_") &&
-          key !== "PYTRO_DMM_REGDICT" &&
-          key !== "PYTRO_DMM_EVENTDICT" &&
           key !== `${appKey}_ENABLE` &&
           key !== `${appKey}_HARDWARE`
         ) {
@@ -1969,24 +2380,24 @@ function editApp(appKey) {
         formHtml += `
           <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
             <li class="nav-item" role="presentation">
-              <a class="nav-link active" id="commonSettings-tab" data-bs-toggle="tab" href="#commonSettings" role="tab" aria-controls="commonSettings" aria-selected="true">Common Settings</a>
+              <a class="nav-link active" id="DMM-commonSettings-tab" data-bs-toggle="tab" href="#DMMcommonSettings" role="tab" aria-controls="DMMcommonSettings" aria-selected="true">Common Settings</a>
             </li>
             <li class="nav-item" role="presentation">
-              <a class="nav-link" id="registerSettings-tab" data-bs-toggle="tab" href="#registerSettings" role="tab" aria-controls="registerSettings">Register Settings</a>
+              <a class="nav-link" id="DMM-registerSettings-tab" data-bs-toggle="tab" href="#DMMregisterSettings" role="tab" aria-controls="DMMregisterSettings">Register Settings</a>
             </li>
             <li class="nav-item" role="presentation">
-              <a class="nav-link" id="advancedSettings-tab" data-bs-toggle="tab" href="#advancedSettings" role="tab" aria-controls="advancedSettings">Advanced Settings</a>
+              <a class="nav-link" id="DMM-advancedSettings-tab" data-bs-toggle="tab" href="#DMMadvancedSettings" role="tab" aria-controls="DMMadvancedSettings">Advanced Settings</a>
             </li>
           </ul>
           <div class="tab-content mt-2" id="editAppTabsContent">
-            <div class="tab-pane fade show active" id="commonSettings" role="tabpanel" aria-labelledby="commonSettings-tab">
+            <div class="tab-pane fade show active" id="DMMcommonSettings" role="tabpanel" aria-labelledby="DMM-commonSettings-tab">
               ${regularFields.join("")}
             </div>
-            <div class="tab-pane fade" id="registerSettings" role="tabpanel" aria-labelledby="registerSettings-tab">
+            <div class="tab-pane fade" id="DMMregisterSettings" role="tabpanel" aria-labelledby="DMM-registerSettings-tab">
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Register Blocks</h5>
-                  <button type="button" class="btn btn-sm btn-primary" id="AddBlockInEditModal" onclick="addRegisterBlockRow()"><i class="fa fa-plus-circle"></i> Add Block</button>
+                  <button type="button" class="btn btn-sm btn-primary AddBlockInEditModal" onclick="addRegisterBlockRow('PYTRO_DMM_REGDICT')"><i class="fa fa-plus-circle"></i> Add Block</button>
                 </div>
                 <table class="table table-bordered mt-2" id="registerBlockTable">
                   <thead>
@@ -1998,13 +2409,13 @@ function editApp(appKey) {
                       <th>Remove</th>
                     </tr>
                   </thead>
-                  <tbody id="registerBlockBody">
+                  <tbody id="DMMregisterBlockBody">
                     ${regDictNestedTables.join("")}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div class="tab-pane fade" id="advancedSettings" role="tabpanel" aria-labelledby="advancedSettings-tab">
+            <div class="tab-pane fade" id="DMMadvancedSettings" role="tabpanel" aria-labelledby="DMM-advancedSettings-tab">
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Event Blocks</h5>
@@ -2025,6 +2436,83 @@ function editApp(appKey) {
                   </thead>
                   <tbody id="eventBlockBody">
                     ${eventDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appKey === "PYTRO_RMM4") {
+        // --- PYTRO_RMM4 tabbed layout ---
+        formHtml += `
+          <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="RMM4-commonSettings-tab" data-bs-toggle="tab" href="#RMM4commonSettings" role="tab" aria-controls="RMM4commonSettings" aria-selected="true">Common Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="RMM4-registerSettings-tab" data-bs-toggle="tab" href="#RMM4registerSettings" role="tab" aria-controls="RMM4registerSettings">Register Settings</a>
+            </li>
+          </ul>
+          <div class="tab-content mt-2" id="editAppTabsContent">
+            <div class="tab-pane fade show active" id="RMM4commonSettings" role="tabpanel" aria-labelledby="RMM4-commonSettings-tab">
+              ${regularFields.join("")}
+            </div>
+            <div class="tab-pane fade" id="RMM4registerSettings" role="tabpanel" aria-labelledby="RMM4-registerSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Register Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary AddBlockInEditModal" onclick="addRegisterBlockRow('PYTRO_RMM4_REGDICT')"><i class="fa fa-plus-circle"></i> Add Block</button>
+                </div>
+                <table class="table table-bordered mt-2" id="registerBlockTable">
+                  <thead>
+                    <tr>
+                      <th>Blocks</th>
+                      <th>Offset</th>
+                      <th>Num Reg</th>
+                      <th>Format</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="RMM4registerBlockBody">
+                    ${regDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appKey === "PYTRO_MRH4") {
+        // --- PYTRO_MRH4 tabbed layout ---
+        formHtml += `
+          <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="MRH4-commonSettings-tab" data-bs-toggle="tab" href="#MRH4commonSettings" role="tab" aria-controls="MRH4commonSettings" aria-selected="true">Common Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="MRH4-registerSettings-tab" data-bs-toggle="tab" href="#MRH4registerSettings" role="tab" aria-controls="MRH4registerSettings">Register Settings</a>
+            </li>
+          </ul>
+          <div class="tab-content mt-2" id="editAppTabsContent">
+            <div class="tab-pane fade show active" id="MRH4commonSettings" role="tabpanel" aria-labelledby="MRH4-commonSettings-tab">
+              ${regularFields.join("")}
+            </div>
+            <div class="tab-pane fade" id="MRH4registerSettings" role="tabpanel" aria-labelledby="MRH4-registerSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Register Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary AddBlockInEditModal" onclick="addRegisterBlockRow('PYTRO_MRH4_REGDICT')"><i class="fa fa-plus-circle"></i> Add Block</button>
+                </div>
+                <table class="table table-bordered mt-2" id="registerBlockTable">
+                  <thead>
+                    <tr>
+                      <th>Blocks</th>
+                      <th>Offset</th>
+                      <th>Node ID</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="MRH4registerBlockBody">
+                    ${regDictNestedTables.join("")}
                   </tbody>
                 </table>
               </div>
@@ -2068,7 +2556,9 @@ function saveAppChanges() {
   const appKey = document.getElementById("editAppKey")?.value;
   const updatedData = {};
   const mergedConfig = {};
-  const regDictData = {}; // To store block data for REGDICT
+  const DMMregDictData = {}; // To store block data for DMM REGDICT
+  const RMM4regDictData = {}; // To store block data for RMM4 REGDICT
+  const MRH4regDictData = {}; // To store block data for MRH4 REGDICT
   const eventDictData = {}; // To store block data for EVENTDICT
 
   const inputsArray = Array.from(inputs);
@@ -2105,7 +2595,11 @@ function saveAppChanges() {
       const originalApp = data.apps[appIndex][appKey];
 
       Object.keys(originalApp).forEach((key) => {
-        if (/^PYTRO_DMM_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key)) {
+        if (
+          /^PYTRO_DMM_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key) ||
+          /^PYTRO_RMM4_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key) ||
+          /^PYTRO_MRH4_REGDICT\.\d+\.(OFFSET|NODE_ID)$/.test(key)
+        ) {
           delete originalApp[key];
         }
       });
@@ -2127,27 +2621,39 @@ function saveAppChanges() {
         }
 
         // Handle block data, e.g., PYTRO_DMM_REGDICT.1.FORMAT
-        const regDictMatch = key.match(
+        const DMMregDictMatch = key.match(
           /^PYTRO_DMM_REGDICT\.(\d+)\.(OFFSET|NUMREG|FORMAT)$/
         );
-        // const eventDictMatch = key.match(
-        //   /^PYTRO_DMM_EVENTDICT\.(\d+)\.(EVENT|VALUE|ACTION)$/
-        // );
-        if (regDictMatch) {
-          const blockNumber = regDictMatch[1]; // "1", "2", etc.
-          const field = regDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
+        const RMM4regDictMatch = key.match(
+          /^PYTRO_RMM4_REGDICT\.(\d+)\.(OFFSET|NUMREG|FORMAT)$/
+        );
+        const MRH4regDictMatch = key.match(
+          /^PYTRO_MRH4_REGDICT\.(\d+)\.(OFFSET|NODE_ID)$/
+        );
+        if (DMMregDictMatch) {
+          const blockNumber = DMMregDictMatch[1]; // "1", "2", etc.
+          const field = DMMregDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
 
-          if (!regDictData[blockNumber]) {
-            regDictData[blockNumber] = {}; // Create a new block if not already present
+          if (!DMMregDictData[blockNumber]) {
+            DMMregDictData[blockNumber] = {}; // Create a new block if not already present
           }
-          regDictData[blockNumber][field] = value;
-          // } else if (eventDictMatch){
-          //     const eventIndex = eventDictMatch[1]; // "1", "2", etc.
-          //     const field = eventDictMatch[2]; // "EVENT", "VALUE", "ACTION"
-          //     if (!eventDictData[eventIndex]) {
-          //       eventDictData[eventIndex] = {}; // Create new event if not already present
-          //     }
-          //     eventDictData[eventIndex][field] = value;
+          DMMregDictData[blockNumber][field] = value;
+        } else if (RMM4regDictMatch) {
+          const blockNumber = RMM4regDictMatch[1]; // "1", "2", etc.
+          const field = RMM4regDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
+
+          if (!RMM4regDictData[blockNumber]) {
+            RMM4regDictData[blockNumber] = {}; // Create a new block if not already present
+          }
+          RMM4regDictData[blockNumber][field] = value;
+        } else if (MRH4regDictMatch) {
+          const blockNumber = MRH4regDictMatch[1]; // "1", "2", etc.
+          const field = MRH4regDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
+
+          if (!MRH4regDictData[blockNumber]) {
+            MRH4regDictData[blockNumber] = {}; // Create a new block if not already present
+          }
+          MRH4regDictData[blockNumber][field] = value;
         } else {
           const originalValue = originalApp[key];
           if (Array.isArray(originalValue)) {
@@ -2204,8 +2710,14 @@ function saveAppChanges() {
 
       // If editing PYTRO_DMM, save blockData as a stringified JSON
       if (appKey === "PYTRO_DMM") {
-        updatedData["PYTRO_DMM_REGDICT"] = regDictData;
+        updatedData["PYTRO_DMM_REGDICT"] = DMMregDictData;
         updatedData["PYTRO_DMM_EVENTDICT"] = eventDictData;
+      }
+      if (appKey === "PYTRO_RMM4") {
+        updatedData["PYTRO_RMM4_REGDICT"] = RMM4regDictData;
+      }
+      if (appKey === "PYTRO_MRH4") {
+        updatedData["PYTRO_MRH4_REGDICT"] = MRH4regDictData;
       }
       // Merge the updated fields into the original app data
       data.apps[appIndex] = {
@@ -2235,11 +2747,12 @@ function saveAppChanges() {
       return res.json();
     })
     .then(() => {
-      document.getElementById("popup").textContent =
-        "Application saved successfully";
-      showPopup("#208f5b");
       hideEditAppsModal();
-      saveToConfigFile(mergedConfig);
+      saveToConfigFile(
+        mergedConfig,
+        "Application saved successfully",
+        "#208f5b"
+      );
     })
     .catch((err) => {
       console.error(err);
@@ -2342,10 +2855,11 @@ async function stopApp(appKey) {
       return res.json();
     })
     .then(() => {
-      document.getElementById("popup").textContent =
-        "Application successfully uninstalled";
-      showPopup("#208f5b");
-      saveToConfigFile(mergedConfig);
+      saveToConfigFile(
+        mergedConfig,
+        "Application successfully uninstalled",
+        "#208f5b"
+      );
     })
     .catch((err) => {
       console.error(err);
@@ -2421,10 +2935,11 @@ function installApp(appKey) {
     })
     .then((resData) => {
       console.log("App updated successfully:", resData);
-      document.getElementById("popup").textContent =
-        "Application successfully installed";
-      showPopup("#208f5b");
-      saveToConfigFile(mergedConfig);
+      saveToConfigFile(
+        mergedConfig,
+        "Application successfully installed",
+        "#208f5b"
+      );
     })
     .catch((err) => {
       console.error(err);
