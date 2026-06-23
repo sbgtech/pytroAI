@@ -13,6 +13,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="/static/css/layout.css" />
     <title>Pytro AI</title>
   </head>
@@ -21,7 +22,7 @@
     <nav>
       <div class="logo">
         <div class="logo-image">
-          <img src="/static/images/pytronix_logo_white.png" alt="" />
+          <img src="/static/images/pytronix_logo_white.png" alt />
         </div>
       </div>
       <div class="menu-items">
@@ -77,202 +78,302 @@
     <section class="dashboard">
       <!-- Console -->
       <div class="data-table consoleTable">
-        <div
-          id="connectToSerialPortContainer"
-          class="d-flex flex-column flex-md-row justify-content-center justify-content-md-between align-items-center gap-2 gap-md-0 mb-3"
-        >
-          <div class="flex-50 w-100">
-            <button
-              onclick="SerialMonitor()"
-              class="btn btn-dark"
-              id="serialMonitorBtn"
-            >
-              Connect to Serial Port
-            </button>
-          </div>
-          <div class="flex-50 w-100 d-flex justify-content-end">
-            <p style="margin-bottom: 0">
-              Status :
-              <span
-                class="device-status"
-                style="
-                  padding: 3px;
-                  color: white;
-                  background-color: #e34c5a;
-                  border-radius: 4px;
-                "
-                >Device disconnected</span
+        <div class="h-100 d-flex flex-column">
+          <!-- Sub Tabs -->
+          <ul class="nav nav-tabs sub-nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active d-flex align-items-center gap-2"
+                id="terminal-tab-btn"
+                data-bs-toggle="tab"
+                href="#terminal-tab"
+                role="tab"
+                aria-selected="true"
               >
-            </p>
-          </div>
-        </div>
-        <div
-          class="row w-100"
-          style="height: 97%; display: none; margin-left: 0"
-          id="deviceInfoContainer"
-        >
-          <div
-            class="col-md-12 position-relative"
-            style="height: 97%"
-            id="terminalContainer"
-          >
+                <ion-icon
+                  name="terminal-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Terminal</span>
+              </a>
+            </li>
+
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link d-flex align-items-center gap-2"
+                id="modbus-tab-btn"
+                data-bs-toggle="tab"
+                href="#modbus-tab"
+                role="tab"
+                aria-selected="false"
+              >
+                <ion-icon
+                  name="analytics-outline"
+                  style="font-size: 20px"
+                ></ion-icon>
+                <span>Modbus</span>
+              </a>
+            </li>
+            <li class="nav-item ms-auto" role="presentation">
+              <p style="padding: 10px; margin-bottom: 0px">
+                Status :
+                <span
+                  class="device-status"
+                  style="
+                    padding: 3px;
+                    color: white;
+                    background-color: #e34c5a;
+                    border-radius: 4px;
+                  "
+                  >Device disconnected</span
+                >
+              </p>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content flex-grow-1 position-relative my-2">
+            <!-- TERMINAL TAB -->
             <div
-              class="card"
-              id="resizeCmd"
-              style="
-                height: 100%;
-                max-height: 100%;
-                border-radius: 8px;
-                position: absolute;
-                top: 0;
-                right: 0;
-                width: 100%;
-              "
+              class="tab-pane fade show active h-100"
+              id="terminal-tab"
+              role="tabpanel"
+              aria-labelledby="terminal-tab-btn"
             >
+              <!-- Status + Connect -->
               <div
-                class="card-header p-2 d-flex flex-column flex-md-row-reverse justify-content-between align-items-center gap-2 gap-md-0"
-                style="background-color: #2c2f38; color: white"
+                class="d-flex flex-column flex-md-row justify-content-center justify-content-md-between align-items-center gap-2 gap-md-0 mb-2"
               >
-                <div class="d-flex justify-content-end w-100 flex-30">
-                  <div class="d-flex">
-                    <span
-                      id="expandBtn"
+                <div class="flex-50 w-100">
+                  <button
+                    onclick="SerialMonitor()"
+                    class="btn btn-dark"
+                    id="serialMonitorBtn"
+                  >
+                    Connect to Serial Port
+                  </button>
+                </div>
+              </div>
+
+              <!-- TERMINAL CONTAINER -->
+              <div
+                class="row w-100"
+                id="deviceInfoContainer"
+                style="height: 95%; display: none; margin-left: 0"
+              >
+                <div
+                  class="col-md-12 position-relative"
+                  style="height: 97%; min-width: 0"
+                  id="terminalContainer"
+                >
+                  <div
+                    class="card"
+                    id="resizeCmd"
+                    style="
+                      height: 100%;
+                      max-height: 100%;
+                      border-radius: 8px;
+                      position: absolute;
+                      top: 0;
+                      right: 0;
+                      width: 100%;
+                    "
+                  >
+                    <!-- HEADER -->
+                    <div
+                      class="card-header p-2 d-flex flex-column flex-md-row-reverse justify-content-between align-items-center gap-2 gap-md-0"
+                      style="background-color: #2c2f38; color: white"
+                    >
+                      <div class="d-flex justify-content-end w-100 flex-30">
+                        <div class="d-flex">
+                          <span
+                            id="expandBtn"
+                            style="
+                              margin-right: 5px;
+                              background-color: #4cd964;
+                              border-radius: 50%;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
+                              cursor: pointer;
+                            "
+                            onclick="widenTerminal()"
+                          >
+                            <i class="fa fa-expand text-dark"></i>
+                          </span>
+                          <span
+                            id="minimizeBtn"
+                            style="
+                              margin-right: 5px;
+                              background-color: #ffcc00;
+                              border-radius: 50%;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
+                              cursor: pointer;
+                            "
+                            onclick="minimizeTerminal()"
+                          >
+                            <i class="fa fa-chevron-right text-dark"></i>
+                          </span>
+                          <span
+                            style="
+                              background-color: #fea49f;
+                              border-radius: 50%;
+                              width: 18px;
+                              height: 18px;
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
+                            "
+                          >
+                            <i class="fa fa-times text-light"></i>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        class="d-flex gap-2 justify-content-center justify-content-md-start align-items-center w-100 flex-70"
+                      >
+                        <button
+                          onclick="RunScript()"
+                          class="console-buttons btn btn-light"
+                        >
+                          Run <i class="fa fa-play text-success"></i>
+                        </button>
+                        <button
+                          onclick="StopScript()"
+                          class="console-buttons btn btn-light"
+                        >
+                          Stop <i class="fa fa-stop text-danger"></i>
+                        </button>
+                        <button
+                          onclick="clearTerminal()"
+                          class="console-buttons btn btn-light"
+                        >
+                          Clear
+                          <i class="fa fa-eraser" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          onclick="MachineReset()"
+                          class="console-buttons btn btn-light"
+                        >
+                          Reset
+                          <i class="fa fa-repeat text-warning"></i>
+                        </button>
+                        <button
+                          onclick="downloadLogs()"
+                          class="console-buttons btn btn-light"
+                        >
+                          Copy logs
+                          <i class="fa fa-copy" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- BODY -->
+                    <div
+                      class="card-body"
                       style="
-                        margin-right: 5px;
-                        background-color: #4cd964;
-                        border-radius: 50%;
-                        width: 18px;
-                        height: 18px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        cursor: pointer;
+                        background-color: black;
+                        color: white;
+                        font-family: 'Courier New', monospace;
+                        font-size: 14px;
+                        height: calc(100% - 40px);
+                        padding: 1.5px;
                       "
-                      onclick="widenTerminal()"
-                      ><i class="fa fa-expand text-dark"></i
-                    ></span>
-                    <span
-                      id="minimizeBtn"
+                    >
+                      <textarea
+                        id="serial-output"
+                        style="background-color: black; border: none"
+                        class="w-100 h-100 text-light"
+                        readonly
+                      >
+                      </textarea>
+                    </div>
+
+                    <!-- INPUT -->
+                    <div class="d-flex">
+                      <input
+                        type="text"
+                        id="serial-input"
+                        class="form-control text-light"
+                        style="
+                          background-color: black;
+                          border-radius: 0px;
+                          border-bottom-left-radius: 7px;
+                          border-bottom-right-radius: 7px;
+                          font-family: 'Courier New', monospace;
+                        "
+                        onkeydown="SendSerialInput(event)"
+                      />
+                    </div>
+
+                    <!-- RESIZE HANDLE -->
+                    <div
+                      class="resize-handle"
+                      id="resizeHandle"
                       style="
-                        margin-right: 5px;
-                        background-color: #ffcc00;
-                        border-radius: 50%;
-                        width: 18px;
-                        height: 18px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        cursor: pointer;
+                        position: absolute;
+                        top: 0;
+                        left: -5px;
+                        width: 10px;
+                        height: 100%;
+                        cursor: ew-resize;
+                        display: none;
                       "
-                      onclick="minimizeTerminal()"
-                      ><i
-                        class="fa fa-chevron-right text-dark"
-                        aria-hidden="true"
-                      ></i
-                    ></span>
-                    <span
-                      style="
-                        background-color: #ff8c86;
-                        border-radius: 50%;
-                        width: 18px;
-                        height: 18px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                      "
-                      ><i
-                        class="fa fa-times text-light disabled"
-                        aria-hidden="true"
-                      ></i>
-                    </span>
+                    ></div>
                   </div>
                 </div>
-                <div
-                  class="d-flex gap-2 justify-content-center justify-content-md-start align-items-center w-100 flex-70"
-                >
-                  <button
-                    onclick="RunScript()"
-                    class="console-buttons btn btn-light"
+              </div>
+            </div>
+
+            <!-- MODBUS TAB -->
+            <div
+              class="tab-pane fade h-100"
+              id="modbus-tab"
+              role="tabpanel"
+              aria-labelledby="modbus-tab-btn"
+            >
+              <div class="card h-100">
+                <div class="card-header">Modbus</div>
+                <div class="card-body overflow-auto">
+                  <table
+                    class="table table-hover table-bordered"
+                    id="holding-table"
                   >
-                    Run <i class="fa fa-play text-success"></i>
-                  </button>
-                  <button
-                    onclick="StopScript()"
-                    class="console-buttons btn btn-light"
-                  >
-                    Stop <i class="fa fa-stop text-danger"></i>
-                  </button>
-                  <button
-                    onclick="clearTerminal()"
-                    class="console-buttons btn btn-light"
-                  >
-                    Clear
-                    <i class="fa fa-eraser" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    onclick="MachineReset()"
-                    class="console-buttons btn btn-light"
-                  >
-                    Reset
-                    <i class="fa fa-repeat text-warning"></i>
-                  </button>
-                  <button
-                    onclick="downloadLogs()"
-                    class="console-buttons btn btn-light"
-                  >
-                    Copy logs
-                    <i class="fa fa-copy" aria-hidden="true"></i>
-                  </button>
+                    <thead>
+                      <tr>
+                        <th class="addr"></th>
+                        <th class="addr">+0</th>
+                        <th class="addr">+1</th>
+                        <th class="addr">+2</th>
+                        <th class="addr">+3</th>
+                        <th class="addr">+4</th>
+                        <th class="addr">+5</th>
+                        <th class="addr">+6</th>
+                        <th class="addr">+7</th>
+                        <th class="addr">+8</th>
+                        <th class="addr">+9</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr id="holding-empty">
+                        <td
+                          colspan="11"
+                          class="text-center text-muted fst-italic"
+                        >
+                          No holding data
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div
-                class="card-body"
-                style="
-                  background-color: black;
-                  color: white;
-                  font-family: 'Courier New', monospace;
-                  font-size: 14px;
-                  height: calc(100% - 40px);
-                  padding: 1.5px;
-                "
-              >
-                <textarea
-                  id="serial-output"
-                  style="background-color: black; border: none"
-                  class="w-100 h-100 text-light"
-                  readonly
-                >
-                </textarea>
-              </div>
-              <div class="d-flex">
-                <input
-                  type="text"
-                  id="serial-input"
-                  class="form-control text-light"
-                  style="
-                    background-color: black;
-                    border-radius: 0px;
-                    border-bottom-left-radius: 7px;
-                    border-bottom-right-radius: 7px;
-                    font-family: 'Courier New', monospace;
-                  "
-                  onkeydown="SendSerialInput(event)"
-                />
-              </div>
-              <!-- Resizing Handle -->
-              <div
-                class="resize-handle"
-                id="resizeHandle"
-                style="
-                  position: absolute;
-                  top: 0;
-                  left: -5px;
-                  width: 10px;
-                  height: 100%;
-                  cursor: ew-resize;
-                  display: none;
-                "
-              ></div>
             </div>
           </div>
         </div>
@@ -925,7 +1026,7 @@
                               type="hidden"
                               name="user_room"
                               id="userRoom"
-                              value=""
+                              value
                             />
                             <div class="mb-3">
                               <label for="board_name" class="form-label"
@@ -938,11 +1039,20 @@
                                 id="board_name"
                                 required
                               >
-                                <option selected disabled value="">
+                                <option selected disabled value>
                                   Choose device
                                 </option>
                                 <option value="RECON_V2">
                                   RECON CONTROLLER V2
+                                </option>
+                                <option value="RECON_PLC_V1">
+                                  RECON PLC V1
+                                </option>
+                                <option value="RECON_PLC_V2">
+                                  RECON PLC V2
+                                </option>
+                                <option value="RECON_PLC_V3">
+                                  RECON PLC V3
                                 </option>
                                 <option value="PYDAQ_S200WE">
                                   PYDAQ S200WE
@@ -952,7 +1062,9 @@
                                 <option value="ODIN-G">ODIN-G</option>
                                 <option value="WT_PLC">WTPLC</option>
                                 <option value="PYDAQ_C2402">PYDAQ C2402</option>
+                                <option value="PYDAQ_C400">PYDAQ C400</option>
                                 <option value="PX_A300">PX A300</option>
+                                <option value="PKE_1107">PKE 1107</option>
                               </select>
                             </div>
                             <div class="mb-3">
@@ -1025,7 +1137,7 @@
                           <div>
                             <a
                               id="download-link-hex"
-                              href=""
+                              href
                               target="_blank"
                               download
                               >Download the .hex file</a
@@ -1034,7 +1146,7 @@
                           <div>
                             <a
                               id="download-link-dfu"
-                              href=""
+                              href
                               target="_blank"
                               download
                               >Download the .dfu file</a
@@ -1422,6 +1534,12 @@
               Submit
             </button>
           </div>
+          <div class="save-new-field-info">
+            <span class="save-new-field-info-text"
+              >*By adding the new field, it will be at the end of the form,
+              please click on save form button to save it.</span
+            >
+          </div>
         </div>
       </div>
     </div>
@@ -1554,6 +1672,5 @@
       const uploadFileUrl = "{{ url_for('upload_file') }}";
     </script>
     <script src="/static/js/serial.js" defer></script>
-    <script src="/static/js/layout.js"></script>
   </body>
 </html>

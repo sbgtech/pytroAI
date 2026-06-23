@@ -224,10 +224,12 @@ def get_data():
             unit_apps = unit_data.get("apps", [])
             unitId_val = unit_data.get("unitId", "")
             board_val = unit_data.get("board", "")
+            mmr_metadata = unit_data.get("MMR_METADATA", {})
     else:
         unit_apps = []
         unitId_val = ""
         board_val = ""
+        mmr_metadata = {}
 
     # Convert app lists to dicts for easier merging
     def apps_list_to_dict(apps):
@@ -266,7 +268,8 @@ def get_data():
     updated_data = {
         "apps": merged_apps,
         "unitId": unitId_val,
-        "board": board_val
+        "board": board_val,
+        "MMR_METADATA":mmr_metadata
     }
     with open(file_path, "w") as f:
         json.dump(updated_data, f, indent=2)
@@ -287,6 +290,63 @@ def update_apps():
         return jsonify({"status": "success", "message": f"{file_path} updated"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/promote-app-fields", methods=["POST"])
+def promote_app_fields():
+    data = request.json
+
+    app_key = data["appKey"]                     # PYTRO_RFC
+    unit_id = data["unitId"]                     # 028893134283
+    field_name = data["field"]["name"]           # PYTRO_RFC_DS_TEST
+    field_value = data["field"]["value"]         # "12"
+
+    apps_dir = "apps"
+    static_path = os.path.join(apps_dir, "apps.json")
+    unit_path = os.path.join(apps_dir, f"apps_{unit_id}.json")
+
+    # ---------- update apps.json ----------
+    with open(static_path) as f:
+        static_data = json.load(f)
+
+    static_app_found = False
+    for app in static_data["apps"]:
+        if app_key in app:
+            static_app_found = True
+            if field_name not in app[app_key]:
+                app[app_key][field_name] = field_value
+            break
+
+    if not static_app_found:
+        return jsonify({"error": "App not found in apps.json"}), 404
+
+    if not field_name.startswith(app_key + "_"):
+        return jsonify({"error": "Field does not belong to app"}), 400
+
+    with open(static_path, "w") as f:
+        json.dump(static_data, f, indent=2)
+
+    # ---------- update apps_<unitId>.json ----------
+    if not os.path.exists(unit_path):
+        return jsonify({"error": "Unit apps file not found"}), 404
+
+    with open(unit_path) as f:
+        unit_data = json.load(f)
+
+    for app in unit_data.get("apps", []):
+        if app_key in app:
+            if field_name not in app[app_key]:
+                app[app_key][field_name] = field_value
+            break
+
+    with open(unit_path, "w") as f:
+        json.dump(unit_data, f, indent=2)
+
+    return jsonify({
+        "status": "ok",
+        "app": app_key,
+        "unitId": unit_id,
+        "field": field_name
+    })
 
 @app.route('/upload', methods=['POST'])
 def upload_file():

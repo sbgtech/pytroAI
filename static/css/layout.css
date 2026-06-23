@@ -562,6 +562,13 @@ nav .menu-items li.active a i {
   flex: 0 0 14%;
 }
 
+.w-30 {
+  width: 30%;
+}
+.w-60 {
+  width: 60%;
+}
+
 .loading-backdrop {
   position: fixed;
   top: 0;
@@ -628,3 +635,78 @@ nav .menu-items li.active a i {
   flex-direction: column;
   gap: 6px;
 }
+
+.mmr-block {
+  border-bottom: 1px solid #cbcbcb;
+  padding-block: 4px;
+  margin-bottom: 4px;
+}
+
+.save-new-field-info {
+  margin-top: 4px;
+  text-align: left;
+}
+
+.save-new-field-info-text {
+  font-size: 11px;
+  color: #c7444a;
+}
+
+/* Style for the table of the live tab*/
+/* .table-wrapper {
+    border: 1px solid #b5bcc6;
+    background: #fff;
+    height: calc(100% - 40px);
+    overflow: auto;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+  }
+
+  thead th {
+    background: #dcdcdc;
+    border: 1px solid #b5bcc6;
+    padding: 4px 0;
+    text-align: center;
+    font-weight: bold;
+  } */
+
+/* tbody td {
+    border: 1px solid #d0d0d0;
+    padding: 4px 6px;
+    text-align: center;
+    color: #000;
+  } */
+
+tbody td.addr,
+thead th.addr {
+  background: #f2f2f2;
+  font-weight: bold;
+}
+
+#holding-table thead, #holding-table tbody {
+  text-align: center;
+}
+
+#holding-table td {
+  background-color: transparent;
+  transition: background-color 0.6s ease;
+}
+
+/* Change highlight */
+.cell-new {
+  background-color: rgb(40, 167, 70) !important;
+}
+
+.cell-changed {
+  background-color: rgb(255, 193, 7) !important;
+}
+
+/* tbody tr:nth-child(even) td:not(.addr) {
+    background: #fafafa;
+  }  */

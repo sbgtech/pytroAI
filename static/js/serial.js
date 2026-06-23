@@ -12,6 +12,7 @@ let configuration = false;
 let Filecheck = false;
 let configParameters = {};
 let dataBuffer = "";
+let holdingBuffer = "";
 let refreshConfigForm = false;
 
 let progressDFUItems = [];
@@ -1226,7 +1227,30 @@ function saveNewField() {
     row.appendChild(inputCol);
     formContainer.appendChild(row);
     console.log("Collected field data:", result);
+    document.getElementById("popup").textContent = "Parameter added successfully";
+    showPopup("#439a43");
     hideNewFieldModal();
+    // update apps.json and apps_id.json with the new field
+    const fieldLabel = result.label; // PYTRO_RFC_DS_TES
+    const appKey = fieldLabel.split("_").slice(0, 2).join("_");
+    console.log("appKey", appKey, "unitid", renamed_mac_address_unitId)
+    fetch("/promote-app-fields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        appKey: appKey,
+        unitId: renamed_mac_address_unitId,
+        field: {
+          name: fieldLabel,
+          value: result.value,
+          type: result.type
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(resp => {
+      console.log("Field promoted:", resp);
+    });
   }
 }
 
@@ -1363,6 +1387,146 @@ function showLoading() {
 function hideLoading() {
   console.log("Hide loading modal...");
   document.getElementById("loadingModal").style.display = "none";
+}
+
+// Global cache for previous values
+let previousHolding = {};
+
+function extractHoldingBlocks() {
+  const regex = /=holding=\s*\n(\{[\s\S]*?\})\s*\n=holding=/g;
+  let match;
+
+  while ((match = regex.exec(holdingBuffer)) !== null) {
+    const dictText = match[1];
+    // console.log("dictText", dictText)
+    // Process block
+    handleHoldingBlock(`holding = ${dictText}`);
+
+    // Remove processed text safely
+    holdingBuffer = holdingBuffer.slice(match.index + match[0].length);
+
+    // Reset regex index because buffer changed
+    regex.lastIndex = 0;
+    
+  }
+}
+
+function handleHoldingBlock(block) {
+  const lineMatch = block.match(/holding\s*=\s*(\{[\s\S]*\})/);
+  if (!lineMatch) return;
+
+  const holdingDict = parsePythonDict(lineMatch[1]);
+  if (!holdingDict) return;
+  // console.log(holdingDict)
+  updateHoldingTable(holdingDict);
+}
+
+function parsePythonDict(dictText) {
+  const jsonText = dictText
+    .replace(/(\d+)\s*:/g, '"$1":')
+    .replace(/'/g, '"');
+
+  try {
+    return JSON.parse(jsonText);
+  } catch (err) {
+    console.error("Failed to parse holding dict", err);
+    return null;
+  }
+}
+
+function getUniqueKeyDiv10Plus(holding) {
+  const keys = Object.keys(holding)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const result = [];
+  const seen = new Set();
+
+  for (const key of keys) {
+    const div10 = Math.floor(key / 10);
+
+    if (!seen.has(div10)) {
+      seen.add(div10);
+      result.push(div10 * 10 + 40001);
+    }
+  }
+
+  return result;
+}
+
+function updateHoldingTable(holding) {
+  const table = document.getElementById("holding-table");
+  if (!table) return;
+
+  const tbody = table.querySelector("tbody");
+  const emptyRow = document.getElementById("holding-empty");
+  const rowAddresses = getUniqueKeyDiv10Plus(holding);
+  const seenRows = new Set();
+   // ✅ hide static empty row when data arrives
+  if (emptyRow) emptyRow.style.display = "none";
+
+  rowAddresses.forEach(rowAddr => {
+    seenRows.add(String(rowAddr));
+
+    let tr = tbody.querySelector(`tr[data-row="${rowAddr}"]`);
+
+    if (!tr) {
+      tr = document.createElement("tr");
+      tr.dataset.row = rowAddr;
+
+      // address cell
+      const addrTd = document.createElement("td");
+      addrTd.className = "addr";
+      tr.appendChild(addrTd);
+
+      // data cells
+      for (let i = 0; i < 10; i++) {
+        tr.appendChild(document.createElement("td"));
+      }
+
+      tbody.appendChild(tr);
+    }
+
+    const tds = tr.querySelectorAll("td");
+    tds[0].textContent = rowAddr;
+
+    const baseKey = rowAddr - 40001;
+
+    for (let i = 0; i < 10; i++) {
+      const td = tds[i + 1];
+      const key = baseKey + i;
+
+      const newValue = holding[key];
+      const oldValue = previousHolding[key];
+
+      td.textContent = newValue !== undefined
+        ? Number(newValue).toFixed(2)
+        : "-";
+
+      td.classList.remove("cell-new", "cell-changed");
+
+      // 🟩 NEW CELL
+      if (oldValue === undefined && newValue !== undefined) {
+        td.classList.add("cell-new");
+        setTimeout(() => td.classList.remove("cell-new"), 1000);
+      }
+
+      // 🟨 CHANGED CELL
+      else if (oldValue !== undefined && Number(newValue) !== Number(oldValue)) {
+        td.classList.add("cell-changed");
+        setTimeout(() => td.classList.remove("cell-changed"), 800);
+      }
+    }
+  });
+
+  // Remove rows that no longer exist
+  [...tbody.querySelectorAll("tr")].forEach(tr => {
+    if (!seenRows.has(tr.dataset.row)) {
+      tr.remove();
+    }
+  });
+
+  previousHolding = { ...holding };
 }
 
 async function SerialMonitor() {
@@ -1609,6 +1773,8 @@ async function SerialMonitor() {
                 }
               }
             }
+            holdingBuffer += Serialdata;
+            extractHoldingBlocks();
             if (configuration) {
               dataBuffer += Serialdata;
               // console.log("CONFIG DATA BUFFER :", dataBuffer);
@@ -1627,6 +1793,7 @@ async function SerialMonitor() {
                 if (keyValueMatches.length > 4) {
                   // console.log("CONTENT BETWEEN QUOTES:", contentBetweenQuotes);
                   // Loop through matches and extract the key-value pairs
+                  console.log(keyValueMatches)
                   keyValueMatches.forEach((matchData) => {
                     const key = matchData[1].trim(); // Extract key (e.g., 'key1')
                     const value = matchData[2].trim(); // Extract value (e.g., 'value1')
@@ -1683,6 +1850,7 @@ async function SerialMonitor() {
                           apps: data.apps,
                           unitId: renamed_mac_address_unitId,
                           board: renamed_board_name,
+                          MMR_METADATA: data.MMR_METADATA || {}
                         }),
                       });
                     })
@@ -1860,6 +2028,8 @@ async function SerialMonitor() {
           button.style.display = "none";
         });
         setBoardName("(Not connected)");
+        holdingBuffer = "";
+        previousHolding = {};
         hideLoading();
       } finally {
         reader.releaseLock();
@@ -1878,6 +2048,8 @@ async function SerialMonitor() {
         button.style.display = "none";
       });
       setBoardName("(Not connected)");
+      holdingBuffer = "";
+      previousHolding = {};
       hideLoading();
     }
   }
@@ -1911,7 +2083,7 @@ async function saveToConfigFile(mergedConfig, popupTitle, popupBackground) {
       if (structuredConfig[appKey][`${appKey}_ENABLE`] === "ON") {
         //   console.log(`the enabled apps ${appKey}_ENABLE`);
 
-        if (key.includes("DICT")) {
+        if (key.includes("DICT") || key.includes("CAGES")) {
           // Convert PYTRO_DMM_REGDICT to JSON with double quotes inside, single quotes outside
           const jsonStr = JSON.stringify(value); // JSON.stringify will handle double quotes inside
           formattedApps += `${key} = '${jsonStr.replace(/'/g, "\\'")}'\\r\\n`;
@@ -1996,6 +2168,8 @@ function renumberRegisterBlockRows(regDict) {
       ? document.getElementById("DMMregisterBlockBody")
       : regDict === "PYTRO_RMM4_REGDICT"
       ? document.getElementById("RMM4registerBlockBody")
+      : regDict === "PYTRO_ODIN_O2_CAGES"
+      ? document.getElementById("ODINO2registerBlockBody")
       : document.getElementById("MRH4registerBlockBody");
   const rows = tbody.querySelectorAll("tr");
   rows.forEach((row, index) => {
@@ -2014,6 +2188,10 @@ function renumberRegisterBlockRows(regDict) {
       // For MRH4, use OFFSET and NODE_ID
       inputs[0].name = `${blockPrefix}.OFFSET`;
       inputs[1].name = `${blockPrefix}.NODE_ID`;
+    } else if (regDict === "PYTRO_ODIN_O2_CAGES") {
+      inputs[0].name = `${blockPrefix}.FLOWMETER_ID`;
+      inputs[1].name = `${blockPrefix}.O2_ID`;
+      inputs[2].name = `${blockPrefix}.VOUT`;
     }
   });
 }
@@ -2024,13 +2202,15 @@ function addRegisterBlockRow(regDict) {
       ? document.getElementById("DMMregisterBlockBody")
       : regDict === "PYTRO_RMM4_REGDICT"
       ? document.getElementById("RMM4registerBlockBody")
+      : regDict === "PYTRO_ODIN_O2_CAGES"
+      ? document.getElementById("ODINO2registerBlockBody")
       : document.getElementById("MRH4registerBlockBody");
   const rows = tbody.querySelectorAll("tr");
   const newRowIndex = tbody.rows.length + 1;
   const blockKey = `${regDict}.${newRowIndex}`;
   // Compute new OFFSET based on previous row
   let newOffset = "";
-  if (rows.length > 0 && regDict !== "PYTRO_MRH4_REGDICT") {
+  if (rows.length > 0 && regDict !== "PYTRO_MRH4_REGDICT" && regDict !== "PYTRO_ODIN_O2_CAGES") {
     const lastRow = rows[rows.length - 1];
     const lastOffsetInput = lastRow.querySelector("input[name$='.OFFSET']");
     const lastNumregInput = lastRow.querySelector("input[name$='.NUMREG']");
@@ -2047,6 +2227,14 @@ function addRegisterBlockRow(regDict) {
       <td>${newRowIndex}</td>
       <td><input type="text" class="form-control" name="${blockKey}.OFFSET" value="${newOffset}"></td>
       <td><input type="text" class="form-control" name="${blockKey}.NODE_ID" value=""></td>
+      <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, '${regDict}')"><i class="fa fa-minus-circle"></i></button></td>
+    `;
+  } else if (regDict === "PYTRO_ODIN_O2_CAGES") {
+     newRow.innerHTML = `
+      <td>${newRowIndex}</td>
+      <td><input type="text" class="form-control" name="${blockKey}.FLOWMETER_ID" value="${newOffset}"></td>
+      <td><input type="text" class="form-control" name="${blockKey}.O2_ID" value=""></td>
+      <td><input type="text" class="form-control" name="${blockKey}.VOUT" value=""></td>
       <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, '${regDict}')"><i class="fa fa-minus-circle"></i></button></td>
     `;
   } else {
@@ -2068,7 +2256,7 @@ function addRegisterBlockRow(regDict) {
   tbody.appendChild(newRow);
   renumberRegisterBlockRows(regDict);
   // Add JS validation in case the user manually types more than 50
-  if (regDict !== "PYTRO_MRH4_REGDICT") {
+  if (regDict !== "PYTRO_MRH4_REGDICT" && regDict !== "PYTRO_ODIN_O2_CAGES") {
     const numregInput = newRow.querySelector(".numreg-input");
     numregInput.addEventListener("input", () => {
       if (parseInt(numregInput.value) > 50) {
@@ -2201,6 +2389,442 @@ function removeEventBlockRow(button) {
   if (row) row.remove();
 }
 
+let mmrBlockIndex = 1;
+
+function updateMMRBlockTitles() {
+  document.querySelectorAll(".mmr-block").forEach((block, i) => {
+    const title = block.querySelector(".mmr-block-title");
+    if (title) {
+      title.textContent = `Block ${i + 1}`;
+    }
+  });
+}
+
+function addMMRBlock() {
+  const container = document.getElementById("MMRBlocksContainer");
+  const blockKey = mmrBlockIndex++;
+
+  container.insertAdjacentHTML(
+    "beforeend",
+    `
+    <div class="card mb-3 p-0 mmr-block" id="mmr-block-${blockKey}" data-block-key="${blockKey}">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong class="mmr-block-title"></strong>
+        <button class="btn btn-sm btn-danger"
+                onclick="removeMMRBlock(this)">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+
+      <div class="card-body">
+
+        <!-- Inline Form -->
+        <div class="d-flex gap-2 align-items-center mb-2 mmr-register-row w-100">
+          <div class="form-floating w-100">
+            <select class="form-select form-select-sm" id="fncSelect-${blockKey}">
+              <option value="" disabled selected>Function</option>
+              <option value="1">0x1</option>
+              <option value="2">0x2</option>
+              <option value="3">0x3</option>
+              <option value="4">0x4</option>
+            </select>
+            <label for="fncSelect-${blockKey}">Select Function</label>
+          </div>
+          <div class="form-floating w-100">
+            <input class="form-control form-control-sm" id="startOffset-${blockKey}">
+            <label for="startOffset-${blockKey}">Start offset</label>
+          </div>
+          <div class="form-floating w-100">
+            <input class="form-control form-control-sm" id="numReg-${blockKey}">
+            <label for="numReg-${blockKey}">Num Registers</label>
+          </div>
+          <div class="form-floating w-100">
+            <select class="form-select form-select-sm" id="formatSelect-${blockKey}">
+              <option value="" disabled selected>Format</option>
+              <option value="bits" disabled>Bits</option>
+              <option value="Uint16">UInt16</option>
+              <option value="Uint32">UInt32</option>
+              <option value="float_big_endian">Float Big Endian</option>
+              <option value="float_little_endian">Float Little Endian</option>
+              <option value="float_big_endian_byte_swapped">Float Big Endain Byte Swapped</option>
+              <option value="float_little_endian_byte_swapped">Float Little Endian Byte Swapped</option>
+            </select>
+            <label for="formatSelect-${blockKey}">Select Format</label>
+          </div>
+
+          <button class="btn btn-success btn-sm"
+                  onclick="generateMMRTable(this)">
+            Generate
+          </button>
+        </div>
+
+        <!-- Table container -->
+        <div class="mmr-table-container"></div>
+
+      </div>
+    </div>
+  `
+  );
+  // Apply rules on function change
+  const fncSelect = document.getElementById(`fncSelect-${blockKey}`);
+  fncSelect.addEventListener("change", () =>
+    applyFncFormatRules(blockKey)
+  );
+  updateMMRBlockTitles();
+}
+
+// function limited the decimal number to be 0, 1 or 2 only
+function limitDecimal(input) {
+  let val = parseInt(input.value, 10);
+
+  if (isNaN(val)) {
+    input.value = 0;
+    return;
+  }
+
+  if (val < 0) input.value = 0;
+  else if (val > 2) input.value = 2;
+}
+
+function generateMMRTable(btn) {
+  const blockCard = btn.closest(".mmr-block");
+  const row = blockCard.querySelector(".mmr-register-row");
+  const tableContainer = blockCard.querySelector(".mmr-table-container");
+
+  const selects = row.querySelectorAll("select");
+  const inputs = row.querySelectorAll("input");
+
+  const FUNCTION = selects[0]?.value;
+  const FORMAT = selects[1]?.value;
+  const START_OFFSET = parseInt(inputs[0]?.value, 10);
+  const NUMREG = parseInt(inputs[1]?.value, 10);
+
+  if (!FUNCTION || !FORMAT || isNaN(START_OFFSET) || isNaN(NUMREG)) {
+    document.getElementById("popup").textContent =
+      "Please fill all block fields";
+    showPopup("rgba(205, 9, 9, 0.8)");
+    return;
+  }
+
+  const showDecimal = FORMAT === "Uint16" || FORMAT === "Uint32";
+  const step = (FORMAT === "Uint16" || FORMAT === "bits") ? 1 : 2;
+  let bodyHtml = "";
+  for (let i = 0; i < NUMREG; i++) {
+    const offset = START_OFFSET + i * step;
+
+    bodyHtml += `
+      <tr class="register-row" data-offset="${offset}">
+        <td>${offset}</td>
+        <td><input class="form-control form-control-sm" value="${FORMAT}" disabled></td>
+        <td><input class="form-control form-control-sm" id="name-${offset}" placeholder="Name"></td>
+        ${
+          showDecimal
+            ? `
+          <td><input type="number" class="form-control form-control-sm" id="decimal-${offset}" value="0" min="0" max="2" step="1" placeholder="Decimal" oninput="limitDecimal(this)"></td>`
+            : ``
+        }
+        <td><input class="form-control form-control-sm" value="${FUNCTION}" disabled></td>
+        <td><input class="form-control form-control-sm" id="description-${offset}" placeholder="Description"></td>
+      </tr>
+    `;
+  }
+
+  tableContainer.innerHTML = `
+    <table class="table table-bordered table-sm">
+      <thead>
+        <tr>
+          <th>Offset</th>
+          <th>Format</th>
+          <th>Name</th>
+          ${showDecimal ? `<th>Decimal</th>` : ``}
+          <th>Function</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bodyHtml}
+      </tbody>
+    </table>
+  `;
+}
+
+function removeMMRBlock(btn) {
+  const block = btn.closest(".mmr-block");
+  if (!block) return;
+
+  block.remove();
+  updateMMRBlockTitles();
+}
+
+function toggleRegisterVisibility(blockKey) {
+  const rows = document.getElementById(`registers-${blockKey}`);
+  const regenBtn = document.getElementById(`regenBtn-${blockKey}`);
+  const editHideBtn = document.getElementById(`editHideBtn-${blockKey}`);
+  const visible = rows.style.display === "block";
+  rows.style.display = visible ? "none" : "block";
+  regenBtn.style.display = visible ? "none" : "inline-block";
+  editHideBtn.innerHTML = visible ? ' <i class="fa fa-edit"></i> Edit' : '<i class="fa fa-eye-slash "></i> Hide';
+}
+
+function regenerateRegisters(blockKey) {
+  const block = document.getElementById(`mmr-block-${blockKey}`);
+  if (!block) return;
+
+  const numRegInput = block.querySelector(`#numReg-${blockKey}`);
+  const startOffsetInput = block.querySelector(`#startOffset-${blockKey}`);
+  const formatSelect = block.querySelector(`#formatSelect-${blockKey}`);
+  const fncSelect = block.querySelector(`#fncSelect-${blockKey}`);
+
+  const newNumReg = parseInt(numRegInput.value, 10);
+  const startOffset = parseInt(startOffsetInput.value, 10);
+  const FORMAT = formatSelect.value;
+  const FNC = fncSelect?.value || "";
+
+  if (isNaN(newNumReg) || isNaN(startOffset) || !FORMAT) return;
+
+  const step = (FORMAT === "Uint16" || FORMAT === "bits") ? 1 : 2;
+  const registersContainer = document.getElementById(`registers-${blockKey}`);
+
+  // Clear old registers
+  registersContainer.innerHTML = "";
+
+  for (let i = 0; i < newNumReg; i++) {
+    const offset = startOffset + i * step;
+
+    registersContainer.insertAdjacentHTML(
+      "beforeend",
+      `
+      <div class="mb-2 register-row" data-offset="${offset}">
+        <div class="d-flex gap-2 align-items-center">
+
+          <!-- Offset -->
+          <div class="form-floating w-100">
+            <input class="form-control" value="${offset}" disabled>
+            <label>Offset</label>
+          </div>
+
+          <!-- Format (display only) -->
+          <div class="form-floating w-100">
+            <input class="form-control" value="${FORMAT}" disabled>
+            <label>Format</label>
+          </div>
+
+          <!-- Name -->
+          <div class="form-floating w-100">
+            <input class="form-control" name="name-${offset}" id="name-${offset}" placeholder="Name">
+            <label>Name</label>
+          </div>
+
+          <!-- Decimal point -->
+          ${
+            FORMAT === "Uint16" || FORMAT === "Uint32"
+              ? `
+                <div class="form-floating w-100">
+                  <input class="form-control"
+                        type="number"
+                        min="0" 
+                        max="2" 
+                        step="1"
+                        oninput="limitDecimal(this)"
+                        name="decimal-${offset}"
+                        id="decimal-${offset}">
+                  <label>Decimal Point</label>
+                </div>
+              `
+              : ``
+          }
+
+          <!-- Function (display only) -->
+          <div class="form-floating w-100">
+            <input class="form-control" value="${FNC}" disabled>
+            <label>Function</label>
+          </div>
+          
+          <!-- Description -->
+          <div class="form-floating w-100">
+            <input class="form-control" name="description-${offset}" id="description-${offset}" placeholder="Description">
+            <label>Description</label>
+          </div>
+        </div>
+      </div>
+    `
+    );
+  }
+}
+
+function removeMMRRow(btn) {
+  const block = btn.closest(".mmr-block");
+  if (!block) return;
+  block.remove();
+}
+
+// function for format rules when fnc selected 
+function applyFncFormatRules(blockKey) {
+  const fncSelect = document.getElementById(`fncSelect-${blockKey}`);
+  const formatSelect = document.getElementById(`formatSelect-${blockKey}`);
+  if (!fncSelect || !formatSelect) return;
+
+  const fnc = Number(fncSelect.value);
+
+  const isBitsOnly = fnc === 1 || fnc === 2;
+
+  [...formatSelect.options].forEach(opt => {
+    if (opt.value === "bits") {
+      opt.disabled = !isBitsOnly;
+    } else {
+      opt.disabled = isBitsOnly;
+    }
+  });
+
+  if (isBitsOnly) {
+    formatSelect.value = "bits";
+    formatSelect.disabled = true;
+  } else {
+    if (formatSelect.value === "bits") {
+      formatSelect.value = "";
+    }
+    formatSelect.disabled = false;
+  }
+}
+
+/************************************ helpers for MMR excel import ************************************/
+// Import function
+function importMMRFromExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: ""
+    });
+
+    processMMRExcelRows(rows);
+  };
+
+  reader.readAsArrayBuffer(file);
+  input.value = ""; // reset input
+}
+
+// Split blocks by empty rows
+function processMMRExcelRows(rows) {
+  const header = rows[0].map(h => h.toString().toLowerCase().trim());
+  const dataRows = rows.slice(1);
+
+  const blocks = [];
+  let currentBlock = [];
+
+  dataRows.forEach(row => {
+    const isEmpty = row.every(cell => cell === "");
+
+    if (isEmpty) {
+      if (currentBlock.length) {
+        blocks.push(currentBlock);
+        currentBlock = [];
+      }
+    } else {
+      currentBlock.push(row);
+    }
+  });
+
+  if (currentBlock.length) blocks.push(currentBlock);
+
+  blocks.forEach(blockRows => buildMMRBlockFromExcel(header, blockRows));
+  updateMMRBlockTitles();
+}
+
+// Convert one Excel block → one MMR block without Generate
+function buildMMRBlockFromExcel(header, rows) {
+  addMMRBlock();
+  const blockKey = mmrBlockIndex - 1;
+  const block = document.getElementById(`mmr-block-${blockKey}`);
+
+  const col = (name) => header.indexOf(name);
+
+  // Extract values from first row
+  const fnc = Number(rows[0][col("function")]);
+  const format = rows[0][col("format")];
+
+  // Set block fields
+  block.querySelector(`#fncSelect-${blockKey}`).value = fnc;
+  block.querySelector(`#formatSelect-${blockKey}`).value = format;
+
+  const offsets = rows.map(r => Number(r[col("start offset")]));
+  block.querySelector(`#startOffset-${blockKey}`).value = Math.min(...offsets);
+  block.querySelector(`#numReg-${blockKey}`).value = rows.length;
+
+  applyFncFormatRules(blockKey);
+
+  // 🔥 Inject registers directly
+  injectRegisterRowsFromExcel(blockKey, rows, header);
+}
+
+// Inject register rows explicitly
+function injectRegisterRowsFromExcel(blockKey, rows, header) {
+  const block = document.getElementById(`mmr-block-${blockKey}`);
+  const container = block.querySelector(".mmr-table-container");
+
+  const col = (name) => header.indexOf(name);
+  const format = rows[0][col("format")];
+  const fnc = rows[0][col("function")];
+
+  const showDecimal = format === "Uint16" || format === "Uint32";
+
+  let bodyHtml = "";
+
+  rows.forEach(row => {
+    const offset = Number(row[col("start offset")]);
+    const name = row[col("name")];
+    const desc = row[col("description")];
+
+    bodyHtml += `
+      <tr class="register-row" data-offset="${offset}">
+        <td>${offset}</td>
+        <td><input class="form-control form-control-sm" value="${format}" disabled></td>
+        <td><input class="form-control form-control-sm" id="name-${offset}" value="${name}"></td>
+        ${
+          showDecimal
+            ? `<td>
+                 <input type="number"
+                        class="form-control form-control-sm"
+                        id="decimal-${offset}"
+                        value="0"
+                        min="0"
+                        max="2"
+                        step="1"
+                        oninput="limitDecimal(this)">
+               </td>`
+            : ""
+        }
+        <td><input class="form-control form-control-sm" value="${fnc}" disabled></td>
+        <td><input class="form-control form-control-sm" id="description-${offset}" value="${desc}"></td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <table class="table table-bordered table-sm">
+      <thead>
+        <tr>
+          <th>Offset</th>
+          <th>Format</th>
+          <th>Name</th>
+          ${showDecimal ? "<th>Decimal</th>" : ""}
+          <th>Function</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>${bodyHtml}</tbody>
+    </table>
+  `;
+}
+
 // edit app fields
 function editApp(appKey) {
   document.getElementById("editAppsModal").style.display = "flex";
@@ -2324,6 +2948,253 @@ function editApp(appKey) {
           });
         } catch (error) {
           console.error("Error parsing PYTRO_MRH4_REGDICT:", error);
+        }
+      }
+      if (appKey === "PYTRO_MMR") {
+        try {
+          const mmrMetadata = data.MMR_METADATA || {};
+          const regDict = fields.PYTRO_MMR_REGDICT ?? {};
+          const eventDict = fields.PYTRO_MMR_EVENTDICT ?? {};
+          // const eventDict = fields.PYTRO_MMR_EVENTDICT;
+          // ✅ Initialize global index safely
+          const existingKeys = Object.keys(regDict).map(Number);
+          mmrBlockIndex = existingKeys.length
+            ? Math.max(...existingKeys) + 1
+            : 1;
+          // Loop through each block in saved data
+          Object.entries(regDict).forEach(([blockKey, block]) => {
+            const { fnc, start, numReg, format } = block;
+            const isUInt = format === "Uint16" || format === "Uint32";
+            /* Build registers safely */
+            let registers = {};
+            if (isUInt && block.regDict && Object.keys(block.regDict).length) {
+              // Uint formats → use saved regDict
+              registers = block.regDict;
+            } else {
+              // Non-uint formats → generate offsets
+              const step = (format === "Uint16" || format === "bits") ? 1 : 2;
+              for (let i = 0; i < numReg; i++) {
+                const offset = start + i * step;
+                registers[offset] = null; // no decimal
+              }
+            }
+
+            // Add the block UI (fnc, start, numReg, format are displayed initially)
+            regDictNestedTables.push(`
+              <div class="mmr-block" id="mmr-block-${blockKey}" data-block-key="${blockKey}">
+                <!-- Block Settings: Function, Start, Num Reg, Format -->
+                <div class="d-flex align-items-center gap-2 mb-2">
+                <!-- Block number -->
+                <strong class="mmr-block-title w-30"></strong>
+                <!-- Function -->
+                <div class="form-floating w-100">
+                  <select class="form-select" id="fncSelect-${blockKey}" onchange="applyFncFormatRules('${blockKey}')">
+                    <option value="1" ${
+                      fnc === 1 ? "selected" : ""
+                    }>0x01</option>
+                    <option value="2" ${
+                      fnc === 2 ? "selected" : ""
+                    }>0x02</option>
+                    <option value="3" ${
+                      fnc === 3 ? "selected" : ""
+                    }>0x03</option>
+                    <option value="4" ${
+                      fnc === 4 ? "selected" : ""
+                    }>0x04</option>
+                  </select>
+                  <label for="fncSelect-${blockKey}">Selected Function</label>
+                </div>
+                  <!-- Start -->
+                  <div class="form-floating w-100">
+                    <input class="form-control" id="startOffset-${blockKey}" value="${start}">
+                    <label for="startOffset-${blockKey}">Started offset</label>
+                  </div>
+                  <!-- Num Reg -->
+                  <div class="form-floating w-100">
+                    <input class="form-control" id="numReg-${blockKey}" value="${numReg}">
+                    <label for="numReg-${blockKey}">Num Registers</label>
+                  </div>
+                  <!-- Format -->
+                  <div class="form-floating w-100">
+                    <select class="form-select" id="formatSelect-${blockKey}">
+                    <option value="bits" ${format === "bits" ? "selected" : ""}>Bits</option>
+                      <option value="Uint16" ${
+                        format === "Uint16" ? "selected" : ""
+                      }>Uint16</option>
+                      <option value="Uint32" ${
+                        format === "Uint32" ? "selected" : ""
+                      }>Uint32</option>
+                      <option value="float_big_endian" ${
+                        format === "float_big_endian" ? "selected" : ""
+                      }>Float Big Endian</option>
+                      <option value="float_little_endian" ${
+                        format === "float_little_endian" ? "selected" : ""
+                      }>Float Little Endian</option>
+                      <option value="float_big_endian_byte_swapped" ${
+                        format === "float_big_endian_byte_swapped"
+                          ? "selected"
+                          : ""
+                      }>Float Big Endain Byte Swapped</option>
+                      <option value="float_little_endian_byte_swapped" ${
+                        format === "float_little_endian_byte_swapped"
+                          ? "selected"
+                          : ""
+                      }>Float Little Endian Byte Swapped</option>
+                    </select>
+                    <label for="formatSelect-${blockKey}">Selected Format</label>
+                  </div>
+                  <!-- Edit Button -->
+                  <button class="btn btn-primary w-30" id="editHideBtn-${blockKey}" onclick="toggleRegisterVisibility('${blockKey}')">
+                    <i class="fa fa-edit"></i> Edit
+                  </button>
+                  <!-- Regenerate Button (hidden initially) -->
+                  <button class="btn btn-warning w-60" id="regenBtn-${blockKey}" onclick="regenerateRegisters('${blockKey}')" style="display: none;">
+                    <i class="fa fa-refresh"></i> Regenerate
+                  </button>
+                  <!-- Remove Button -->
+                  <button class="btn btn-danger" onclick="removeMMRRow(this)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+
+                <!-- Register Rows (Initially hidden) -->
+                <div class="register-rows" id="registers-${blockKey}" style="display: none;">
+                  ${Object.entries(registers)
+                    .map(([offset, reg]) => {
+                      const decimal = typeof reg === "number" ? reg : undefined;
+                      const showDecimal = typeof decimal === "number";
+
+                      // ✅ READ METADATA
+                      const meta =
+                        mmrMetadata?.[blockKey]?.[offset] || {};
+
+                      const name = meta.name || "";
+                      const description = meta.description || "";
+                      return `
+                      <div class="mb-2 register-row" data-offset="${offset}">
+                        <div class="d-flex gap-2 align-items-center">
+
+                          <!-- Offset -->
+                          <div class="form-floating w-100">
+                            <input class="form-control" value="${offset}" id="offset-${offset}" disabled>
+                            <label for="offset-${offset}">Start offset</label>
+                          </div>
+
+                          <!-- Format -->
+                          <div class="form-floating w-100">
+                            <input class="form-control" value="${format}" disabled>
+                            <label>Format</label>
+                          </div>
+
+                          <!-- Name -->
+                          <div class="form-floating w-100">
+                            <input class="form-control" name="name-${offset}" id="name-${offset}" value="${name}">
+                            <label for="name-${offset}">Name</label>
+                          </div>
+
+                          ${
+                            showDecimal
+                              ? `
+                          <!-- Decimal point -->
+                          <div class="form-floating w-100">
+                            <input class="form-control"
+                                  type="number"
+                                  min="0" 
+                                  max="2" 
+                                  step="1"
+                                  oninput="limitDecimal(this)"
+                                  name="decimal-${offset}"
+                                  id="decimal-${offset}"
+                                  value="${decimal}">
+                            <label for="decimal-${offset}">Decimal Point</label>
+                          </div>
+                          `
+                              : ``
+                          }
+
+                          <!-- Function -->
+                          <div class="form-floating w-100">
+                            <input class="form-control" value="0x${fnc
+                              .toString(16)
+                              .padStart(2, "0")}" disabled>
+                            <label>Function</label>
+                          </div>
+
+                          <!-- Description -->
+                          <div class="form-floating w-100">
+                            <input class="form-control" name="description-${offset}" id="description-${offset}" value="${description}">
+                            <label for="description-${offset}">Description</label>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                    })
+                    .join("")}
+                </div>
+              </div>
+            `);
+            setTimeout(() => applyFncFormatRules(blockKey), 0);
+          });
+
+          // for MMR evendict
+          Object.keys(eventDict).forEach((offsetKey) => {
+            const indexedEvents = eventDict[offsetKey];
+
+            Object.keys(indexedEvents).forEach((indexKey) => {
+              const {
+                EVENT,
+                PREV_VAL,
+                CURRENT_VAL,
+                UPDATE_REG,
+                UPDATE_VAL,
+                ACTION,
+              } = indexedEvents[indexKey];
+              const conditionLabel = `${parseInt(indexKey)}`;
+
+              eventDictNestedTables.push(`
+                <tr>
+                  <td><input type="text" class="form-control event-index-input" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}" value="${offsetKey}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.EVENT" value="${EVENT}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.PREV_VAL" value="${PREV_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.CURRENT_VAL" value="${CURRENT_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.UPDATE_REG" value="${UPDATE_REG}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.UPDATE_VAL" value="${UPDATE_VAL}"></td>
+                  <td><input type="text" class="form-control event-field" disabled name="PYTRO_MMR_EVENTDICT.${offsetKey}.${indexKey}.ACTION" value="${ACTION}"></td>
+                  <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEventBlockRow(this)"><i class="fa fa-minus-circle"></i></button></td>
+                </tr>
+              `);
+            });
+          });
+        } catch (error) {
+          console.error(
+            "Error parsing PYTRO_MMR_REGDICT or PYTRO_MMR_EVENTDICT:",
+            error
+          );
+        }
+      }
+      if (appKey === "PYTRO_ODIN_O2") {
+        try {
+          const regDict = fields.PYTRO_ODIN_O2_CAGES;
+
+          Object.keys(regDict).forEach((blockKey) => {
+            const block = regDict[blockKey];
+            const { FLOWMETER_ID, O2_ID, VOUT } = block;
+
+            regDictNestedTables.push(`
+              <tr>
+                <td><strong>${blockKey}</strong></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_ODIN_O2_CAGES.${blockKey}.FLOWMETER_ID" value="${FLOWMETER_ID}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_ODIN_O2_CAGES.${blockKey}.O2_ID" value="${O2_ID}"></td>
+                <td><input type="text" class="form-control" disabled name="PYTRO_ODIN_O2_CAGES.${blockKey}.VOUT" value="${VOUT}"></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRegisterBlockRow(this, 'PYTRO_ODIN_O2_CAGES')"><i class="fa fa-minus-circle"></i></button></td>
+              </tr>
+            `);
+          });
+        } catch (error) {
+          console.error(
+            "Error parsing PYTRO_ODIN_O2_CAGES: ",
+            error
+          );
         }
       }
 
@@ -2519,6 +3390,115 @@ function editApp(appKey) {
             </div>
           </div>
         `;
+      } else if (appKey === "PYTRO_MMR") {
+        // --- PYTRO_MMR tabbed layout ---
+        formHtml += `
+          <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="MMR-commonSettings-tab" data-bs-toggle="tab" href="#MMRcommonSettings" role="tab" aria-controls="MMRcommonSettings" aria-selected="true">Common Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="MMR-registerSettings-tab" data-bs-toggle="tab" href="#MMRregisterSettings" role="tab" aria-controls="MMRregisterSettings">Register Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="MMR-advancedSettings-tab" data-bs-toggle="tab" href="#MMRadvancedSettings" role="tab" aria-controls="MMRadvancedSettings">Advanced Settings</a>
+            </li>
+          </ul>
+          <div class="tab-content mt-2" id="editAppTabsContent">
+            <!-- Common Settings -->
+            <div class="tab-pane fade show active" id="MMRcommonSettings" role="tabpanel" aria-labelledby="MMR-commonSettings-tab">
+              ${regularFields.join("")}
+            </div>
+            <!-- Register Settings -->
+            <div class="tab-pane fade" id="MMRregisterSettings" role="tabpanel" aria-labelledby="MMR-registerSettings-tab">
+              <div class="mb-2 d-flex justify-content-end gap-2">
+                <button class="btn btn-primary mt-1"
+                        onclick="addMMRBlock()">
+                  <i class="fa fa-plus-circle"></i> Add Block
+                </button>
+                <button class="btn btn-info mt-1"
+                        onclick="document.getElementById('mmrImportInput').click()">
+                  <i class="fa fa-upload"></i> Import File
+                </button>
+                <input
+                  type="file"
+                  id="mmrImportInput"
+                  accept=".xlsx,.xls"
+                  style="display:none"
+                  onchange="importMMRFromExcel(this)"
+                />
+              </div>
+              <div id="MMRBlocksContainer">${regDictNestedTables.join(
+                 ""
+              )}</div>
+            </div>
+            <!-- Advanced Settings -->
+            <div class="tab-pane fade" id="MMRadvancedSettings" role="tabpanel" aria-labelledby="MMR-advancedSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Event Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="addEventBlockRow()"><i class="fa fa-plus-circle"></i> Add Event</button>
+                </div>
+                <table class="table table-bordered mt-2" id="eventBlockTable">
+                  <thead>
+                    <tr>
+                      <th>Offset</th>
+                      <th>Event</th>
+                      <th>Previous Val</th>
+                      <th>Current Val</th>
+                      <th>Update Register</th>
+                      <th>Update Value</th>
+                      <th>Action</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eventBlockBody">
+                    ${eventDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (appKey === "PYTRO_ODIN_O2") {
+        // --- PYTRO_ODIN_O2 tabbed layout ---
+        formHtml += `
+          <ul class="nav nav-tabs" id="editAppTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="ODINO2-commonSettings-tab" data-bs-toggle="tab" href="#ODINO2commonSettings" role="tab" aria-controls="ODINO2commonSettings" aria-selected="true">Common Settings</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="ODINO2-registerSettings-tab" data-bs-toggle="tab" href="#ODINO2registerSettings" role="tab" aria-controls="ODINO2registerSettings">Cage Settings</a>
+            </li>
+          </ul>
+          <div class="tab-content mt-2" id="editAppTabsContent">
+            <div class="tab-pane fade show active" id="ODINO2commonSettings" role="tabpanel" aria-labelledby="ODINO2-commonSettings-tab">
+              ${regularFields.join("")}
+            </div>
+            <div class="tab-pane fade" id="ODINO2registerSettings" role="tabpanel" aria-labelledby="ODINO2-registerSettings-tab">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="mb-0">Cage Blocks</h5>
+                  <button type="button" class="btn btn-sm btn-primary AddBlockInEditModal" onclick="addRegisterBlockRow('PYTRO_ODIN_O2_CAGES')"><i class="fa fa-plus-circle"></i> Add Block</button>
+                </div>
+                <table class="table table-bordered mt-2" id="registerBlockTable">
+                  <thead>
+                    <tr>
+                      <th>CAGE ID</th>
+                      <th>Flowmeter ID</th>
+                      <th>O2 ID</th>
+                      <th>VOUT</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ODINO2registerBlockBody">
+                    ${regDictNestedTables.join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
       } else {
         // --- Other apps: flat layout ---
         formHtml += regularFields.length
@@ -2534,12 +3514,25 @@ function editApp(appKey) {
           </div>
           <div class="d-flex gap-2">
             <button onclick="hideEditAppsModal()" class="btn btn-dark">Cancel</button>
-            <button class="btn btn-success" id="submitInEditModal" onclick="saveAppChanges()">Submit</button>
+            ${
+              appKey === "PYTRO_MMR"
+                ? `<button class="btn btn-success"
+                          id="submitInEditModal"
+                          onclick="saveMMRApp()">
+                    Save changes
+                  </button>`
+                : `<button class="btn btn-success"
+                          id="submitInEditModal"
+                          onclick="saveAppChanges()">
+                    Submit
+                  </button>`
+            }
           </div>
         </div>
       `;
 
       document.getElementById("editAppForm").innerHTML = formHtml;
+      updateMMRBlockTitles();
     })
     .catch((err) => {
       console.error("Error loading data:", err);
@@ -2548,6 +3541,206 @@ function editApp(appKey) {
       ).innerHTML = `<p class="text-danger">Error loading Application.</p>`;
     });
 }
+
+// save MMR app
+function saveMMRApp() {
+  const appKey = "PYTRO_MMR";
+  const mergedConfig = {};
+
+  const mmrRegDict = {};
+  const mmrEventDict = {};
+  const mmrMetadata = {};
+  fetch(`/get-data?macId=${renamed_mac_address_unitId}`)
+    .then(res => res.json())
+    .then(data => {
+      const appIndex = data.apps.findIndex(app => app[appKey]);
+      if (appIndex === -1) throw new Error("MMR app not found");
+
+      const originalApp = data.apps[appIndex][appKey];
+
+      /* ===============================
+         SAVE NORMAL APP INPUTS
+      =============================== */
+      document
+        .querySelectorAll("#editAppForm input, #editAppForm select, #editAppForm textarea")
+        .forEach(input => {
+          const key = input.name || input.id;
+          if (!key) return;
+
+          if (
+            key.startsWith("name-") ||
+            key.startsWith("description-") ||
+            key.startsWith("decimal-") ||
+            key.startsWith("offset-")
+          ) return;
+
+          // ❌ CRITICAL: skip flattened EVENTDICT keys
+          if (/^PYTRO_MMR_EVENTDICT\.\d+(\.|$)/.test(key)) return;
+
+          originalApp[key] = input.value;
+        });
+
+      /* ===============================
+        BUILD REGDICT + METADATA
+      =============================== */
+      document.querySelectorAll(".mmr-block").forEach((blockEl, uiIndex) => {
+        const blockKey = uiIndex + 1;
+
+        const fnc = parseInt(
+          blockEl.querySelector(`#fncSelect-${blockEl.dataset.blockKey}`).value,
+          16
+        );
+
+        const start = Number(
+          blockEl.querySelector(`#startOffset-${blockEl.dataset.blockKey}`).value
+        );
+
+        const numReg = Number(
+          blockEl.querySelector(`#numReg-${blockEl.dataset.blockKey}`).value
+        );
+
+        const format = blockEl.querySelector(
+          `#formatSelect-${blockEl.dataset.blockKey}`
+        ).value;
+
+        const isUInt =
+          format === "Uint16" || format === "Uint32";
+
+        const blockObj = {
+          fnc,
+          start,
+          numReg,
+          format
+        };
+
+        /* ✅ ONLY UINT FORMATS GET regDict */
+        if (isUInt) {
+          const regDict = {};
+
+          blockEl.querySelectorAll(".register-row").forEach(row => {
+            const offset = row.dataset.offset;
+            const decimalInput = row.querySelector(`[id^="decimal-"]`);
+            regDict[offset] = decimalInput
+              ? Number(decimalInput.value) || 0
+              : 0;
+          });
+
+          blockObj.regDict = regDict;
+        }
+
+        mmrRegDict[blockKey] = blockObj;
+
+      /* ===============================
+           METADATA (UI ONLY)
+        =============================== */
+        const metaBlock = {};
+
+        blockEl.querySelectorAll(".register-row").forEach(row => {
+          const offset = row.dataset.offset;
+
+          const nameInput = row.querySelector(`[id^="name-"]`);
+          const descInput = row.querySelector(`[id^="description-"]`);
+
+          const name = nameInput?.value?.trim();
+          const description = descInput?.value?.trim();
+
+          if (name || description) {
+            metaBlock[offset] = {};
+            if (name) metaBlock[offset].name = name;
+            if (description) metaBlock[offset].description = description;
+          }
+        });
+
+        if (Object.keys(metaBlock).length) {
+          mmrMetadata[blockKey] = metaBlock;
+        }
+      });
+
+      /* ===============================
+        BUILD PYTRO_MMR_EVENTDICT
+      =============================== */
+      const conditionCounter = {};
+      const eventRows = document.querySelectorAll("#eventBlockBody tr");
+
+      eventRows.forEach((row, rowIndex) => {
+        const offset = row.querySelector(".event-index-input")?.value?.trim();
+        if (!offset) {
+          console.warn(`Skipping event row ${rowIndex + 1}: no offset`);
+          return;
+        }
+
+        if (!conditionCounter[offset]) conditionCounter[offset] = 1;
+        else conditionCounter[offset]++;
+
+        const idx = conditionCounter[offset];
+
+        if (!mmrEventDict[offset]) mmrEventDict[offset] = {};
+        mmrEventDict[offset][idx] = {};
+
+        const fields = row.querySelectorAll(".event-field");
+        fields.forEach((field, i) => {
+          const val = field.value;
+          if (i === 0) mmrEventDict[offset][idx].EVENT = val;
+          if (i === 1) mmrEventDict[offset][idx].PREV_VAL = val;
+          if (i === 2) mmrEventDict[offset][idx].CURRENT_VAL = val;
+          if (i === 3) mmrEventDict[offset][idx].UPDATE_REG = val;
+          if (i === 4) mmrEventDict[offset][idx].UPDATE_VAL = val;
+          if (i === 5) mmrEventDict[offset][idx].ACTION = val;
+        });
+      });
+
+      /* ===============================
+         SAVE SAME STRUCTURE (CLOUD + CONFIG)
+      =============================== */
+      data.apps[appIndex] = {
+        [appKey]: {
+          ...originalApp,
+          PYTRO_MMR_REGDICT: mmrRegDict,
+          PYTRO_MMR_EVENTDICT: mmrEventDict
+        }
+      };
+
+      /* ===============================
+         SAVE METADATA OUTSIDE APP
+      =============================== */
+      data.MMR_METADATA = mmrMetadata;
+
+      mergedToConfig(mergedConfig, data);
+      mergedConfig.PYTRO_MMR_REGDICT = mmrRegDict;
+      mergedConfig.PYTRO_MMR_EVENTDICT = mmrEventDict;
+
+
+
+      return fetch("/update-apps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mac: renamed_mac_address,
+          apps: data.apps,
+          unitId: renamed_mac_address_unitId,
+          board: renamed_board_name,
+          MMR_METADATA: data.MMR_METADATA
+        })
+      });
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to save MMR");
+      return res.json();
+    })
+    .then(() => {
+      hideEditAppsModal();
+      saveToConfigFile(
+        mergedConfig,
+        "MMR application saved successfully",
+        "#208f5b"
+      );
+    })
+    .catch(err => {
+      console.error(err);
+      showPopup("Error saving MMR application", "rgba(205,9,9,0.8)");
+    });
+}
+
 
 // save app changes
 function saveAppChanges() {
@@ -2560,6 +3753,7 @@ function saveAppChanges() {
   const RMM4regDictData = {}; // To store block data for RMM4 REGDICT
   const MRH4regDictData = {}; // To store block data for MRH4 REGDICT
   const eventDictData = {}; // To store block data for EVENTDICT
+  const ODINO2regDictData = {};
 
   const inputsArray = Array.from(inputs);
   const invalidInput = inputsArray.find((input) => {
@@ -2598,6 +3792,7 @@ function saveAppChanges() {
         if (
           /^PYTRO_DMM_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key) ||
           /^PYTRO_RMM4_REGDICT\.\d+\.(OFFSET|NUMREG|FORMAT)$/.test(key) ||
+          /^PYTRO_ODIN_O2_CAGES\.\d+\.(FLOWMETER_ID|O2_ID|VOUT)$/.test(key) ||
           /^PYTRO_MRH4_REGDICT\.\d+\.(OFFSET|NODE_ID)$/.test(key)
         ) {
           delete originalApp[key];
@@ -2630,6 +3825,9 @@ function saveAppChanges() {
         const MRH4regDictMatch = key.match(
           /^PYTRO_MRH4_REGDICT\.(\d+)\.(OFFSET|NODE_ID)$/
         );
+        const ODINO2regDictMatch = key.match(
+          /^PYTRO_ODIN_O2_CAGES\.(\d+)\.(FLOWMETER_ID|O2_ID|VOUT)$/
+        );
         if (DMMregDictMatch) {
           const blockNumber = DMMregDictMatch[1]; // "1", "2", etc.
           const field = DMMregDictMatch[2]; // "OFFSET", "NUMREG", "FORMAT"
@@ -2654,6 +3852,14 @@ function saveAppChanges() {
             MRH4regDictData[blockNumber] = {}; // Create a new block if not already present
           }
           MRH4regDictData[blockNumber][field] = value;
+        } else if (ODINO2regDictMatch) {
+          const blockNumber = ODINO2regDictMatch[1]; // "1", "2", etc.
+          const field = ODINO2regDictMatch[2]; // "FLOWMETER_ID", "O2_ID", "VOUT"
+
+          if (!ODINO2regDictData[blockNumber]) {
+            ODINO2regDictData[blockNumber] = {}; // Create a new block if not already present
+          }
+          ODINO2regDictData[blockNumber][field] = value;
         } else {
           const originalValue = originalApp[key];
           if (Array.isArray(originalValue)) {
@@ -2718,6 +3924,9 @@ function saveAppChanges() {
       }
       if (appKey === "PYTRO_MRH4") {
         updatedData["PYTRO_MRH4_REGDICT"] = MRH4regDictData;
+      }
+      if (appKey === "PYTRO_ODIN_O2") {
+        updatedData["PYTRO_ODIN_O2_CAGES"] = ODINO2regDictData;
       }
       // Merge the updated fields into the original app data
       data.apps[appIndex] = {
@@ -3733,76 +4942,131 @@ async function parseDfuFile(tab, file, device) {
   console.log("Done parsing DfuSe file.");
 }
 
-/* resize terminal */
+/* =========================
+   TERMINAL RESIZE LOGIC
+   ========================= */
+
 const row = document.getElementById("deviceInfoContainer");
 const resizeHandle = document.getElementById("resizeHandle");
 const card = document.getElementById("resizeCmd");
 const terminalContainer = document.getElementById("terminalContainer");
+
 let isResizing = false;
-// const minWidth = 500; // Minimum width (500px)
 
-// Get the available width of the parent row
+/*
+  terminalMode:
+  - "auto"      → edge-based (left:0 + right:0) → TRUE full width
+  - "minimized" → 50% width
+  - "manual"    → drag resize
+*/
+let terminalMode = "auto";
+let manualRatio = 1;
+
+/* ---------- HELPERS ---------- */
+
+function getParentWidth() {
+  return row.clientWidth || terminalContainer.clientWidth;
+}
+
 function getMinWidth() {
-  return row.clientWidth / 2; // Get the full width of the row (container)
-}
-// Get the available width of the parent row
-function getMaxWidth() {
-  return row.clientWidth; // Get the full width of the row (container)
-}
-function widenTerminal() {
-  const maxWidth = getMaxWidth();
-  card.style.width = `${maxWidth}px`;
-}
-function minimizeTerminal() {
-  const minWidth = getMinWidth();
-  card.style.width = `${minWidth}px`;
+  return getParentWidth() / 2;
 }
 
-// Show the resize handle only when the mouse is near the left edge
-card.addEventListener("mousemove", (e) => {
-  const cardRect = card.getBoundingClientRect();
-  const mouseX = e.clientX;
+/* ---------- APPLY WIDTH ---------- */
 
-  // Check if mouse is within 5px of the left edge of the card
-  if (mouseX <= cardRect.left + 5 && mouseX >= cardRect.left - 5) {
-    resizeHandle.style.display = "block"; // Show the resize handle
-  } else {
-    resizeHandle.style.display = "none"; // Hide the resize handle
+function applyTerminalWidth() {
+  const parentWidth = getParentWidth();
+  if (!parentWidth) return;
+
+  if (terminalMode === "auto") {
+    // EDGE-BASED sizing (this is the key)
+    card.style.width = "";
+    card.style.left = "0";
+    card.style.right = "0";
+    return;
   }
+
+  // WIDTH-BASED sizing
+  card.style.left = "auto";
+  card.style.right = "0";
+
+  if (terminalMode === "minimized") {
+    card.style.width = parentWidth * 0.5 + "px";
+    return;
+  }
+
+  if (terminalMode === "manual") {
+    card.style.width = parentWidth * manualRatio + "px";
+  }
+}
+
+/* ---------- BUTTONS ---------- */
+
+function widenTerminal() {
+  terminalMode = "auto";
+  manualRatio = 1;
+  applyTerminalWidth();
+}
+
+function minimizeTerminal() {
+  terminalMode = "minimized";
+  applyTerminalWidth();
+}
+
+/* ---------- RESIZE HANDLE ---------- */
+
+card.addEventListener("mousemove", (e) => {
+  const rect = card.getBoundingClientRect();
+  resizeHandle.style.display =
+    e.clientX >= rect.left - 5 && e.clientX <= rect.left + 5
+      ? "block"
+      : "none";
 });
 
-// Mouse down event to start resizing
+/* ---------- DRAG RESIZE ---------- */
+
 resizeHandle.addEventListener("mousedown", (e) => {
   e.preventDefault();
   isResizing = true;
-  document.body.style.cursor = "ew-resize"; // Change cursor to indicate resizing
+  terminalMode = "manual";
+  document.body.style.cursor = "ew-resize";
 });
 
-// Mouse move event to resize the container
 document.addEventListener("mousemove", (e) => {
-  if (isResizing) {
-    // Get the maxWidth dynamically based on the current row width
-    const maxWidth = getMaxWidth();
-    const minWidth = getMinWidth();
+  if (!isResizing) return;
 
-    // Calculate the width based on the mouse position relative to the left edge
-    let newWidth = terminalContainer.getBoundingClientRect().right - e.clientX; // width based on mouse position
+  const parentWidth = getParentWidth();
+  if (!parentWidth) return;
 
-    // Constrain the width between minWidth and maxWidth
-    if (newWidth < minWidth) newWidth = minWidth;
-    if (newWidth > maxWidth) newWidth = maxWidth;
+  let newWidth =
+    terminalContainer.getBoundingClientRect().right - e.clientX;
 
-    // Update the width of the card
-    card.style.width = newWidth + "px";
-  }
+  const minWidth = getMinWidth();
+  if (newWidth < minWidth) newWidth = minWidth;
+  if (newWidth > parentWidth) newWidth = parentWidth;
+
+  manualRatio = newWidth / parentWidth;
+
+  // WIDTH-BASED sizing during drag
+  card.style.left = "auto";
+  card.style.right = "0";
+  card.style.width = newWidth + "px";
 });
 
-// Mouse up event to stop resizing
 document.addEventListener("mouseup", () => {
-  if (isResizing) {
-    isResizing = false;
-    document.body.style.cursor = "default"; // Reset cursor to default
-  }
+  if (!isResizing) return;
+  isResizing = false;
+  document.body.style.cursor = "default";
+});
+
+/* ---------- LAYOUT CHANGES ---------- */
+
+// Screen resize
+window.addEventListener("resize", applyTerminalWidth);
+
+// Bootstrap tab switch
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
+  tab.addEventListener("shown.bs.tab", applyTerminalWidth);
 });
 
 /* the build section for build process */
@@ -4026,3 +5290,37 @@ function getRandomColor() {
   const randomIndex = Math.floor(Math.random() * colors.length); // Generate a random index
   return colors[randomIndex]; // Return the color at the random index
 }
+
+document.querySelectorAll(".navList").forEach(function (element) {
+  element.addEventListener("click", async function () {
+    document.querySelectorAll(".navList").forEach(function (e) {
+      e.classList.remove("active");
+    });
+
+    // Add active class to the clicked navList element
+    this.classList.add("active");
+
+    // Get the index of the clicked navList element
+    var index = Array.from(this.parentNode.children).indexOf(this);
+
+    // Hide all data-table elements
+    document.querySelectorAll(".data-table").forEach(function (table) {
+      table.style.display = "none";
+    });
+
+    // Show the corresponding table based on the clicked index
+    var tables = document.querySelectorAll(".data-table");
+    if (tables.length > index) {
+      tables[index].style.display = 'block';
+    }
+
+    // Check if the clicked item is the second one (index 1)
+    applicationTabIndex = index;
+    if (applicationTabIndex === 2) {
+      await StopScript();
+      await SerialWrite(
+        `\x03\r\nimport ubinascii,machine,network\r\na = ubinascii.hexlify(network.LAN().config('mac'), ':').decode().upper() if hasattr(network, "LAN") else machine.unique_id()[4:].hex().upper()\r\nprint(f"<>mac address : {a}<>")\r\nprint(f"<>board name : {machine.board_name()}<>")\r\n`
+      );
+    }
+  });
+});

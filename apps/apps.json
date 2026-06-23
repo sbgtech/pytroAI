@@ -17,6 +17,7 @@
         "PYTRO_CELL_ATT_PROFILE": "ON",
         "PYTRO_CELL_SERVER": "iot.s2c.io",
         "PYTRO_CELL_PORT": "9010",
+        "PYTRO_CELL_ESIM": "OFF",
         "SIZE": "",
         "PYTRO_CELL_HARDWARE": ["CELL"]
       }
@@ -303,9 +304,7 @@
         "PYTRO_OAS_MODBUS_SLAVE_ID": "1",
         "PYTRO_OAS_RADIO_CHANNEL": "12",
         "PYTRO_OAS_MODBUS_BAUDRATE": "9600",
-        "PYTRO_OAS_FLOW_OFFSET": "72",
-        "PYTRO_OAS_PRES_OFFSET": "41",
-        "PYTRO_OAS_TEMP_OFFSET": "27",
+        "PYTRO_OAS_FLOWMETER": ["VPFlowScope-In-line", "VPFlowScope-M-In-line"],
         "PYTRO_ODING_HARDWARE": ["RADIO", "RS4851"]
       }
     },
@@ -315,9 +314,278 @@
         "PYTRO_COE_SERVER": "147.182.196.146",
         "PYTRO_COE_PORT": "9010"
       }
+    },
+    {
+      "PYTRO_PBE": {
+        "CATEGORY": "",
+        "DESCRIPTION": "PUSH BY EXCEPTION",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_PBE_ENABLE": "OFF",
+        "PYTRO_PBE_PUSH_RATE": "10",
+        "PYTRO_PBE_CHANGE_RATE": "15",
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_RFC": {
+        "CATEGORY": "",
+        "DESCRIPTION": "RECON FLOW CONTROL",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_RFC_ENABLE": "OFF",
+        "PYTRO_RFC_RS485_SLAVE_ID": "2",
+        "PYTRO_RFC_RS485_BAUDRATE": "9600",
+        "PYTRO_RFC_RS485_HIGH_WORD_FIRST": "OFF",
+        "PYTRO_RFC_ORIFICE_SIZE": "0.75",
+        "PYTRO_RFC_BETA_RATIO": "0.36",
+        "PYTRO_RFC_CAL_COUT1_A": "0.15",
+        "PYTRO_RFC_CAL_COUT1_B": "-4.39e-3",
+        "SIZE": "",
+        "PYTRO_RFC_TCP_SLAVE_ID": "2",
+        "PYTRO_RFC_TCP_IP_ADDRESS": "192.168.10.11",
+        "PYTRO_RFC_TCP_GATEWAY": "192.168.10.1",
+        "PYTRO_RFC_TCP_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_RFC_TCP_DNS": "8.8.8.8",
+        "PYTRO_RFC_TCP_PORT": "502",
+        "PYTRO_RFC_TCP_HIGH_WORD_FIRST": "OFF"
+      }
+    },
+    {
+      "PYTRO_MMR": {
+        "CATEGORY": "Modbus RTU",
+        "DESCRIPTION": "MODBUS MASTER RS485",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MMR_ENABLE": "OFF",
+        "PYTRO_MMR_RS485_BAUDRATE": "9600",
+        "PYTRO_MMR_RS485_HIGH_WORD_FIRST": "ON",
+        "PYTRO_MMR_RS485_SLAVE_ID": "11",
+        "PYTRO_MMR_ATT_PROFILE": "ON",
+        "PYTRO_MMR_CELL_APN": "teal",
+        "PYTRO_MMR_EVENTDICT": {},
+        "PYTRO_MMR_REGDICT": {},
+        "PYTRO_MMR_HARDWARE": ["CELL", "RS4851"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCA": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication A",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCA_ENABLE": "OFF",
+        "PYTRO_MPCA_PORT": "503",
+        "PYTRO_MPCA_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MPCA_GATEWAY": "192.168.10.1",
+        "PYTRO_MPCA_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_MPCA_DNS": "8.8.8.8",
+        "PYTRO_MPCA_RS485_BAUDRATE": "9600",
+        "PYTRO_MPCA_HARDWARE": ["TCP", "RS485"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCB": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication B",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCB_ENABLE": "OFF",
+        "PYTRO_MPCB_PORT": "503",
+        "PYTRO_MPCB_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MPCB_GATEWAY": "192.168.10.1",
+        "PYTRO_MPCB_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_MPCB_DNS": "8.8.8.8",
+        "PYTRO_MPCB_RS232_BAUDRATE": "9600",
+        "PYTRO_MPCB_HARDWARE": ["TCP", "RS232"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCC": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication C",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCC_ENABLE": "OFF",
+        "PYTRO_MPCC_PORT": "503",
+        "PYTRO_MPCC_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MPCC_GATEWAY": "192.168.10.1",
+        "PYTRO_MPCC_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_MPCC_DNS": "8.8.8.8",
+        "PYTRO_MPCC_SERVER": "192.168.10.11",
+        "PYTRO_MPCC_RS485_BAUDRATE": "9600",
+        "PYTRO_MPCC_HARDWARE": ["TCP", "RS485"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCD": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication D",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCD_ENABLE": "OFF",
+        "PYTRO_MPCD_RS485_BAUDRATE ": "9600",
+        "PYTRO_MPCD_RS232_BAUDRATE": "9600",
+        "PYTRO_MPCD_HARDWARE": ["RS485", "RS232"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCE": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication E",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCE_ENABLE": "OFF",
+        "PYTRO_MPCE_PORT": "503",
+        "PYTRO_MPCE_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_MPCE_GATEWAY": "192.168.10.1",
+        "PYTRO_MPCE_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_MPCE_DNS": "8.8.8.8",
+        "PYTRO_MPCE_SERVER": "192.168.10.11",
+        "PYTRO_MPCE_RS232_BAUDRATE": "9600",
+        "PYTRO_MPCE_HARDWARE": ["TCP", "RS232"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_MPCF": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Modbus Protocol Communication F",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_MPCF_ENABLE": "OFF",
+        "PYTRO_MPCF_RS485_BAUDRATE ": "9600",
+        "PYTRO_MPCF_RS232_BAUDRATE": "9600",
+        "PYTRO_MPCF_HARDWARE": ["RS485", "RS232"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRA": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio    TCP==>Radio",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRA_ENABLE": "OFF",
+        "PYTRO_TMRA_PORT": "503",
+        "PYTRO_TMRA_IP_ADDRESS": "192.168.10.10",
+        "PYTRO_TMRA_GATEWAY": "192.168.10.1",
+        "PYTRO_TMRA_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_TMRA_DNS": "8.8.8.8",
+        "PYTRO_TMRA_ADDRESS": "B10A",
+        "PYTRO_TMRA_RADIO_ID": "B10B",
+        "PYTRO_TMRA_CHANNEL": "12",
+        "PYTRO_TMRA_HARDWARE": ["TCP", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRB": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio    Radio==>TCP",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRB_ENABLE": "OFF",
+        "PYTRO_TMRB_PORT": "502",
+        "PYTRO_TMRB_IP_ADDRESS": "192.168.10.11",
+        "PYTRO_TMRB_GATEWAY": "192.168.10.1",
+        "PYTRO_TMRB_SUBNET_MASK": "255.255.255.0",
+        "PYTRO_TMRB_SERVER": "192.168.10.12",
+        "PYTRO_TMRB_DNS": "8.8.8.8",
+        "PYTRO_TMRB_ADDRESS": "B10B",
+        "PYTRO_TMRB_RADIO_ID": "B10A",
+        "PYTRO_TMRB_CHANNEL": "12",
+        "PYTRO_TMRB_HARDWARE": ["TCP", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRC": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio     RS485==>Radio",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRC_ENABLE": "OFF",
+        "PYTRO_TMRC_ADDRESS": "B10A",
+        "PYTRO_TMRC_RADIO_ID": "B10B",
+        "PYTRO_TMRC_CHANNEL": "12",
+        "PYTRO_TMRC_Baudrate": "9600",
+        "PYTRO_TMRC_HARDWARE": ["RS485", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRD": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio     Radio==>RS485",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRD_ENABLE": "OFF",
+        "PYTRO_TMRD_ADDRESS": "B10B",
+        "PYTRO_TMRD_RADIO_ID": "B10A",
+        "PYTRO_TMRD_CHANNEL": "12",
+        "PYTRO_TMRD_Baudrate": "9600",
+        "PYTRO_TMRD_HARDWARE": ["RS485", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRE": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio     RS232==>Radio",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRE_ENABLE": "OFF",
+        "PYTRO_TMRE_ADDRESS": "B10A",
+        "PYTRO_TMRE_RADIO_ID": "B10B",
+        "PYTRO_TMRE_CHANNEL": "12",
+        "PYTRO_TMRE_Baudrate": "9600",
+        "PYTRO_TMRE_HARDWARE": ["RS232", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_TMRF": {
+        "CATEGORY": "Modbus Protocol Communication",
+        "DESCRIPTION": "Transparent Modbus Radio     Radio==>RS232",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_TMRF_ENABLE": "OFF",
+        "PYTRO_TMRF_ADDRESS": "B10B",
+        "PYTRO_TMRF_RADIO_ID": "B10A",
+        "PYTRO_TMRF_CHANNEL": "12",
+        "PYTRO_TMRF_Baudrate": "9600",
+        "PYTRO_TMRF_HARDWARE": ["RS232", "RADIO"],
+        "SIZE": ""
+      }
+    },
+    {
+      "PYTRO_ODIN_O2": {
+        "CATEGORY": "ODIN O2",
+        "DESCRIPTION": "ODIN O2",
+        "NAME": "",
+        "PUBLISHER": "",
+        "PYTRO_ODIN_O2_ENABLE": "OFF",
+        "PYTRO_ODIN_O2_RADIO_CHANNEL": "12",
+        "PYTRO_ODIN_O2_FLOW_TYPE": "0",
+        "PYTRO_ODIN_O2_RADIO_NODE_ID": "B002",
+        "PYTRO_ODIN_O2_MODBUS_BAUDRATE": "19200",
+        "PYTRO_ODIN_O2_CAGES": {},
+        "PYTRO_ODIN_O2_HARDWARE": [
+          "LORA",
+          "RS4851"
+        ],
+        "SIZE": ""
+      }
     }
   ],
   "unitId": "",
   "board": "",
-  "mac": ""
+  "mac": "",
+  "MMR_METADATA": {}
 }
